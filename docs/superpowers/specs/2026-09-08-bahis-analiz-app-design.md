@@ -76,12 +76,12 @@ Liste kod içinde yapılandırılabilir bir sabit olacak (yeni lig eklemek kolay
 
 ## 6. Veri modeli (özet)
 
-- `leagues`: id, name, country, api_football_id, odds_api_key, active (checkbox için)
+- `leagues`: id, name, country, api_football_id, odds_api_sport_key, active (checkbox için)
 - `matches`: id, league_id, home_team, away_team, kickoff_at, api_football_fixture_id
 - `team_stats_snapshots`: match_id, team, form, injuries(json), cards(json), last_matches(json), shots/goals istatistikleri
-- `odds_snapshots`: match_id, market, outcome, price, fetched_at (zaman serisi için append-only)
+- `odds_snapshots`: match_id, market, outcome, bookmaker, price, fetched_at (zaman serisi için append-only)
 - `ai_analyses`: match_id, generated_at, team_analyst_text, betting_analyst_text, commentator_text, summary_text, model_used
-- `manual_odds`: match_id, user_id, market, price, entered_at
+- `manual_odds`: match_id, entered_by, market, outcome, price, entered_at
 
 ## 7. Hata yönetimi
 
