@@ -66,9 +66,8 @@ Liste kod içinde yapılandırılabilir bir sabit olacak (yeni lig eklemek kolay
 
 ## 5. Kullanıcı akışı
 
-1. Kullanıcı paylaşılan şifre ile giriş yapar.
-2. Ana sayfada lig listesi checkbox olarak gösterilir → seçilen liglerin güncel/yaklaşan maçları listelenir.
-3. Kullanıcı bir maça tıklar → detay sayfası açılır:
+1. Ana sayfada lig listesi checkbox olarak gösterilir → seçilen liglerin güncel/yaklaşan maçları listelenir.
+2. Kullanıcı bir maça tıklar → detay sayfası açılır:
    - Takım formu, son maçlar, sakatlık/ceza durumu (API-Football'dan)
    - Güncel referans oran + oran geçmişi grafiği (The Odds API + kendi snapshot'larımız)
    - 3 persona analiz: **Takım Analizcisi** (form/sakatlık/önemli an yorumu — örn. "play-off için 3 puana mecburlar"), **Bahis Analizcisi** (istatistik + oran okuma, value değerlendirmesi), **Yorumcu** (genel maç yorumu/tahmini)
@@ -92,7 +91,7 @@ Liste kod içinde yapılandırılabilir bir sabit olacak (yeni lig eklemek kolay
 
 ## 8. Erişim/güvenlik
 
-- Tam kullanıcı kayıt sistemi yok. Tek bir paylaşılan şifre (env variable) ile basit oturum (cookie) korumalı sayfa.
+- Auth/şifre koruması yok — uygulama linki bilen herkese açık (kullanıcının tercihi: 3-5 kişilik güven çevresi için gereksiz karmaşıklık). İleride ihtiyaç olursa eklenebilir.
 - API anahtarları (API-Football, The Odds API, Gemini, Supabase) sunucu tarafı env variable olarak tutulur, client'a asla gönderilmez.
 
 ## 9. Maliyet özeti
