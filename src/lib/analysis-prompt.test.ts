@@ -43,8 +43,22 @@ describe("buildAnalysisPrompt", () => {
     });
     expect(prompt).toContain("WWDLW");
     expect(prompt).toContain("Sakatlik/cezali sayisi: 1");
-    expect(prompt).toContain("Kart cezasi sayisi: 1");
+    expect(prompt).toContain("1 oyuncu cezali");
     expect(prompt).toContain("Everton");
+  });
+
+  it("never claims a verified zero card suspension count when cards data was simply never collected", () => {
+    const prompt = buildAnalysisPrompt({
+      ...baseInput,
+      homeStats: {
+        form: "WWDLW",
+        injuries: [],
+        cards: [],
+        lastMatches: [],
+      },
+    });
+    expect(prompt).toContain("veri toplanmiyor");
+    expect(prompt).not.toContain("Kart cezasi sayisi");
   });
 
   it("marks missing odds explicitly and warns against value-bet commentary", () => {

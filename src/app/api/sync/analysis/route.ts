@@ -7,8 +7,10 @@ import { getLatestAnalysisGeneratedAt, needsFreshAnalysis, insertAiAnalysis } fr
 import { generateMatchAnalysis, GEMINI_MODEL } from "@/lib/gemini";
 import { isSyncRequestAuthorized } from "@/lib/sync-auth";
 
-const ANALYSIS_SYNC_WINDOW_DAYS = 7;
-const MAX_MATCHES_PER_RUN = 80;
+export const maxDuration = 60;
+
+const ANALYSIS_SYNC_WINDOW_DAYS = 3;
+const MAX_MATCHES_PER_RUN = 15;
 
 export async function POST(request: NextRequest) {
   if (!isSyncRequestAuthorized(request)) {

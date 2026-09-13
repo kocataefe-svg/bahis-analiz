@@ -28,7 +28,7 @@ function formatTeamStats(label: string, stats: TeamStatsForPrompt | null): strin
     `${label}:`,
     `- Son form: ${stats.form || "bilinmiyor"}`,
     `- Sakatlik/cezali sayisi: ${stats.injuries.length}`,
-    `- Kart cezasi sayisi: ${stats.cards.length}`,
+    `- Kart cezasi: ${stats.cards.length > 0 ? `${stats.cards.length} oyuncu cezali` : "veri toplanmiyor (henuz bu bilgi kaynagi yok)"}`,
     `- Son maclar: ${JSON.stringify(stats.lastMatches)}`,
   ].join("\n");
 }

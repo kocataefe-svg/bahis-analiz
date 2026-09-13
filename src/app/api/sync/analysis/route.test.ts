@@ -67,6 +67,8 @@ describe("POST /api/sync/analysis", () => {
     const body = await res.json();
 
     expect(res.status).toBe(200);
+    expect(getUpcomingMatches).toHaveBeenCalledWith(expect.anything(), 3, 15);
+    expect(needsFreshAnalysis).toHaveBeenCalledWith(null, null);
     expect(generateMatchAnalysis).toHaveBeenCalledWith(
       expect.objectContaining({ homeTeam: "Arsenal", awayTeam: "Chelsea" }),
     );

@@ -14,7 +14,7 @@
 
 - Model: `gemini-3.5-flash-lite` (spec §3 — `gemini-2.5-flash-lite` Ekim 2026'da emekli oluyor, bu yüzden değiştirildi).
 - Gemini SDK yüzeyi: `ai.interactions.create({ model, input, response_format: { type: "text", mime_type: "application/json", schema } })`, yanıt `interaction.output_text` alanında JSON string olarak gelir (spec §3).
-- Ücretsiz kota: Gemini 1500 istek/gün, 30 istek/dk — bu plandaki senkron rotası günde en fazla 2 kez tetiklenecek ve çalıştırma başına en fazla 80 maçla sınırlı olacak (bkz. Task 5), yani en kötü senaryoda 160 istek/gün — kotanın çok altında.
+- Ücretsiz kota: Gemini 1500 istek/gün, 30 istek/dk — bu plandaki senkron rotası günde en fazla 2 kez tetiklenecek ve çalıştırma başına en fazla 15 maçla sınırlı olacak (final review sonrası Vercel Hobby serverless zaman aşımı riskini azaltmak ve `stats` senkron penceresiyle hizalanmak için 80'den düşürüldü, bkz. Task 5), yani en kötü senaryoda 30 istek/gün — kotanın çok altında.
 - Eksik veri asla hataya yol açmaz: istatistik veya oran verisi yoksa analiz "bu veri mevcut değil" diyerek üretilmeye devam eder (spec §3, §7). Hiçbir görev bir maçta veri olacağını varsaymaz.
 - Analiz sonucu önbelleklenir: kullanıcı sayfa açtığında yeniden üretilmez, sadece senkron job'da üretilip DB'ye yazılır (spec §2).
 - API anahtarları sunucu tarafı env variable'dır, client'a gönderilmez (spec §8). `GEMINI_API_KEY` zaten `.env.local.example`'da mevcut.
@@ -987,8 +987,10 @@ import { getLatestAnalysisGeneratedAt, needsFreshAnalysis, insertAiAnalysis } fr
 import { generateMatchAnalysis, GEMINI_MODEL } from "@/lib/gemini";
 import { isSyncRequestAuthorized } from "@/lib/sync-auth";
 
-const ANALYSIS_SYNC_WINDOW_DAYS = 7;
-const MAX_MATCHES_PER_RUN = 80;
+export const maxDuration = 60;
+
+const ANALYSIS_SYNC_WINDOW_DAYS = 3;
+const MAX_MATCHES_PER_RUN = 15;
 
 export async function POST(request: NextRequest) {
   if (!isSyncRequestAuthorized(request)) {
