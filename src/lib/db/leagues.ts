@@ -29,3 +29,41 @@ export async function getActiveLeagues(supabase: SupabaseClient): Promise<SyncLe
     oddsApiSportKey: row.odds_api_sport_key,
   }));
 }
+
+export interface DisplayLeague {
+  id: string;
+  name: string;
+  country: string;
+}
+
+export async function getActiveLeaguesForDisplay(supabase: SupabaseClient): Promise<DisplayLeague[]> {
+  const { data, error } = await supabase
+    .from("leagues")
+    .select("id, name, country")
+    .eq("active", true)
+    .order("name", { ascending: true });
+
+  if (error) throw new Error(`Ligler alinamadi: ${error.message}`);
+
+  interface RawRow {
+    id: string;
+    name: string;
+    country: string;
+  }
+
+  return ((data ?? []) as RawRow[]).map((row) => ({
+    id: row.id,
+    name: row.name,
+    country: row.country,
+  }));
+}
+
+export async function getLeagueById(supabase: SupabaseClient, id: string): Promise<DisplayLeague | null> {
+  const { data, error } = await supabase.from("leagues").select("id, name, country").eq("id", id).maybeSingle();
+
+  if (error) throw new Error(`Lig alinamadi: ${error.message}`);
+  if (!data) return null;
+
+  const row = data as { id: string; name: string; country: string };
+  return { id: row.id, name: row.name, country: row.country };
+}

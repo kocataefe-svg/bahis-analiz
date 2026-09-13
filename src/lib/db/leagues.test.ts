@@ -33,3 +33,72 @@ describe("getActiveLeagues", () => {
     await expect(getActiveLeagues(supabase)).rejects.toThrow("boom");
   });
 });
+
+import { getActiveLeaguesForDisplay, getLeagueById } from "./leagues";
+
+describe("getActiveLeaguesForDisplay", () => {
+  it("returns id/name/country for active leagues, ordered by name", async () => {
+    const order = vi.fn().mockResolvedValue({
+      data: [
+        { id: "l1", name: "Premier League", country: "England" },
+        { id: "l2", name: "Süper Lig", country: "Turkey" },
+      ],
+      error: null,
+    });
+    const eq = vi.fn(() => ({ order }));
+    const select = vi.fn(() => ({ eq }));
+    const from = vi.fn(() => ({ select }));
+
+    const result = await getActiveLeaguesForDisplay({ from } as any);
+
+    expect(from).toHaveBeenCalledWith("leagues");
+    expect(eq).toHaveBeenCalledWith("active", true);
+    expect(result).toEqual([
+      { id: "l1", name: "Premier League", country: "England" },
+      { id: "l2", name: "Süper Lig", country: "Turkey" },
+    ]);
+  });
+
+  it("throws when the query fails", async () => {
+    const order = vi.fn().mockResolvedValue({ data: null, error: { message: "boom" } });
+    const eq = vi.fn(() => ({ order }));
+    const select = vi.fn(() => ({ eq }));
+    const from = vi.fn(() => ({ select }));
+    await expect(getActiveLeaguesForDisplay({ from } as any)).rejects.toThrow("boom");
+  });
+});
+
+describe("getLeagueById", () => {
+  it("returns the league when found", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: { id: "l1", name: "Premier League", country: "England" },
+      error: null,
+    });
+    const eq = vi.fn(() => ({ maybeSingle }));
+    const select = vi.fn(() => ({ eq }));
+    const from = vi.fn(() => ({ select }));
+
+    const result = await getLeagueById({ from } as any, "l1");
+
+    expect(from).toHaveBeenCalledWith("leagues");
+    expect(eq).toHaveBeenCalledWith("id", "l1");
+    expect(result).toEqual({ id: "l1", name: "Premier League", country: "England" });
+  });
+
+  it("returns null when not found", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    const eq = vi.fn(() => ({ maybeSingle }));
+    const select = vi.fn(() => ({ eq }));
+    const from = vi.fn(() => ({ select }));
+    const result = await getLeagueById({ from } as any, "missing");
+    expect(result).toBeNull();
+  });
+
+  it("throws when the query fails", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: { message: "boom" } });
+    const eq = vi.fn(() => ({ maybeSingle }));
+    const select = vi.fn(() => ({ eq }));
+    const from = vi.fn(() => ({ select }));
+    await expect(getLeagueById({ from } as any, "l1")).rejects.toThrow("boom");
+  });
+});

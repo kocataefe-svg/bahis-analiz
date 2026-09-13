@@ -86,3 +86,92 @@ describe("getUpcomingMatches", () => {
     ]);
   });
 });
+
+import { getUpcomingMatchesWithLeague, getMatchById } from "./matches";
+
+describe("getUpcomingMatchesWithLeague", () => {
+  it("returns display-shaped matches within the window", async () => {
+    const limit = vi.fn().mockResolvedValue({
+      data: [
+        {
+          id: "m1",
+          league_id: "l1",
+          home_team: "Arsenal",
+          away_team: "Chelsea",
+          kickoff_at: "2026-09-20T15:00:00Z",
+        },
+      ],
+      error: null,
+    });
+    const order = vi.fn(() => ({ limit }));
+    const lte = vi.fn(() => ({ order }));
+    const gte = vi.fn(() => ({ lte }));
+    const select = vi.fn(() => ({ gte }));
+    const from = vi.fn(() => ({ select }));
+
+    const result = await getUpcomingMatchesWithLeague({ from } as any, 14, 300);
+
+    expect(from).toHaveBeenCalledWith("matches");
+    expect(limit).toHaveBeenCalledWith(300);
+    expect(result).toEqual([
+      { id: "m1", leagueId: "l1", homeTeam: "Arsenal", awayTeam: "Chelsea", kickoffAt: "2026-09-20T15:00:00Z" },
+    ]);
+  });
+
+  it("throws when the query fails", async () => {
+    const limit = vi.fn().mockResolvedValue({ data: null, error: { message: "boom" } });
+    const order = vi.fn(() => ({ limit }));
+    const lte = vi.fn(() => ({ order }));
+    const gte = vi.fn(() => ({ lte }));
+    const select = vi.fn(() => ({ gte }));
+    const from = vi.fn(() => ({ select }));
+    await expect(getUpcomingMatchesWithLeague({ from } as any, 14, 300)).rejects.toThrow("boom");
+  });
+});
+
+describe("getMatchById", () => {
+  it("returns the match when found", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        id: "m1",
+        league_id: "l1",
+        home_team: "Arsenal",
+        away_team: "Chelsea",
+        kickoff_at: "2026-09-20T15:00:00Z",
+      },
+      error: null,
+    });
+    const eq = vi.fn(() => ({ maybeSingle }));
+    const select = vi.fn(() => ({ eq }));
+    const from = vi.fn(() => ({ select }));
+
+    const result = await getMatchById({ from } as any, "m1");
+
+    expect(from).toHaveBeenCalledWith("matches");
+    expect(eq).toHaveBeenCalledWith("id", "m1");
+    expect(result).toEqual({
+      id: "m1",
+      leagueId: "l1",
+      homeTeam: "Arsenal",
+      awayTeam: "Chelsea",
+      kickoffAt: "2026-09-20T15:00:00Z",
+    });
+  });
+
+  it("returns null when not found", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    const eq = vi.fn(() => ({ maybeSingle }));
+    const select = vi.fn(() => ({ eq }));
+    const from = vi.fn(() => ({ select }));
+    const result = await getMatchById({ from } as any, "missing");
+    expect(result).toBeNull();
+  });
+
+  it("throws when the query fails", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: { message: "boom" } });
+    const eq = vi.fn(() => ({ maybeSingle }));
+    const select = vi.fn(() => ({ eq }));
+    const from = vi.fn(() => ({ select }));
+    await expect(getMatchById({ from } as any, "m1")).rejects.toThrow("boom");
+  });
+});
