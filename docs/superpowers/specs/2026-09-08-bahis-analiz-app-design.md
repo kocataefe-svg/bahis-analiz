@@ -39,7 +39,7 @@ sunan, mobil uyumlu, tamamen ücretsiz altyapı üzerinde çalışan bir web uyg
 |---|---|---|---|
 | API-Football (api-sports.io) | Fikstür, takım istatistikleri, sakatlık, kart cezası, kadro, son maç sonuçları | Ücretsiz | 100 istek/gün |
 | The Odds API | Bookmaker oranları (1X2 / maç sonucu) | Ücretsiz | 500 kredi/ay (kredi = istek değil, piyasa×bölge başına) |
-| Gemini API (Google) | AI analiz metni üretimi | Ücretsiz | Flash-Lite: 1500 istek/gün, 15 istek/dk |
+| Gemini API (Google) | AI analiz metni üretimi | Ücretsiz | Flash-Lite: 1500 istek/gün, 30 istek/dk |
 
 **Önemli kısıtlamalar (kullanıcıya açıkça gösterilecek):**
 - Oranlar uluslararası bookmaker'lardan gelir, İddaa/Nesine/Bilyoner'in kendi oranı **değildir**. İddaa marjı (~%23) uluslararası "sharp" kitapçılara (~%2-3) göre çok daha yüksektir — yani gösterilen oran, gerçek oynadığınız sitedeki oranla birebir aynı olmayacaktır.
@@ -49,6 +49,7 @@ sunan, mobil uyumlu, tamamen ücretsiz altyapı üzerinde çalışan bir web uyg
 - **KG Var/Yok (BTTS) otomatik çekimde yok (düzeltme):** İlk tasarımda KG Var/Yok'u da çekeceğimizi varsaymıştık, ancak The Odds API bu piyasayı toplu (`/sports/{key}/odds`) endpoint'inde sunmuyor — sadece maç başına ayrı bir endpoint'te (kotayı hızla tüketir) mevcut. Plan 2 uygulamasında bu yüzden **sadece 1X2 (maç sonucu, `h2h`) oranı** otomatik çekiliyor. KG Var/Yok gerekirse ileride maç başına ayrı çağrı ile (kota bütçesi yeniden hesaplanarak) eklenebilir.
 - **Gerçekçi güncelleme sıklığı ve düzeltilmiş kota hesabı:** The Odds API krediyi **istek başına değil, piyasa×bölge başına** faturalandırıyor. 14 lig (TFF 1. Lig hariç) × 1 piyasa (`h2h`) × 1 bölge (`eu`) × günde 1 senkron × 30 gün ≈ **420 kredi/ay** — 500 kredi/ay kotasının içinde, ~80 kredi tampon payı bırakır. API-Football'un günlük 100 istek kotası fikstür senkronunu günde 2 kez (~30 istek), takım istatistik/sakatlık senkronunu günde 1 kez (en fazla 15 maç × 3 istek ≈ 45 istek) çalıştırmaya izin veriyor, toplam ~75/100. Yani veriler "anlık" değil, günde 1-2 kez güncellenen bir görünüm sunacak — bu, ücretsiz kalmanın maliyeti.
 - **Takım istatistiği kapsama sınırı:** Günlük istatistik senkronu en fazla 15 maçla sınırlı (API-Football kotası yüzünden). Yoğun bir hafta sonunda 15'ten fazla maç varsa, kapsam dışı kalan maçların `team_stats_snapshots` kaydı **hiç oluşmayabilir** (kickoff geçtikten sonra bir daha denenmez). Arayüz ve AI analiz aşaması (Plan 3/4) bunu "bu maç için yeterli istatistik verisi yok" şeklinde ele almalı, her maçta veri olacağını varsaymamalı.
+- **Gemini model güncellemesi (Plan 3 öncesi düzeltme):** İlk tasarımda seçilen `gemini-2.5-flash-lite`'ın Ekim 2026'da (yaklaşık 16-20 Ekim) emekliye ayrılacağı doğrulandı — Plan 3'ün üzerine kurulacağı bir modelin bir ay içinde kaldırılması riskli olduğundan, **`gemini-3.5-flash-lite`** kullanılacak (aynı ücretsiz tier, hatta biraz daha yüksek limit: 1500 istek/gün, 30 istek/dk, retirement tarihi duyurulmamış). SDK tarafı da güncel: `@google/genai` paketinde artık `ai.models.generateContent()` değil, `ai.interactions.create({ model, input, response_format: { type: "text", mime_type: "application/json", schema: {...} } })` şekli kullanılıyor — yapılandırılmış JSON çıktısı (3 persona + özet) bu şekilde tek çağrıda alınacak.
 
 ## 4. Varsayılan lig listesi (kullanıcı checkbox ile seçer)
 
@@ -105,7 +106,7 @@ Liste kod içinde yapılandırılabilir bir sabit olacak (yeni lig eklemek kolay
 | Veritabanı (Supabase) | $0 |
 | Spor/istatistik verisi (API-Football) | $0 |
 | Oran verisi (The Odds API) | $0 |
-| AI analiz (Gemini 2.5 Flash-Lite) | $0 |
+| AI analiz (Gemini 3.5 Flash-Lite) | $0 |
 | **Toplam** | **$0/ay** |
 
 Not: Ücretsiz kotalar aşılırsa (çok yoğun kullanım) ilk aşılacak muhtemelen The Odds API'nin aylık 500 istek limiti olur — bu durumda çekim sıklığı azaltılır ya da seçili lig sayısı kısıtlanır, ek ücret ödemeden yönetilebilir.
