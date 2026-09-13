@@ -88,3 +88,59 @@ describe("needsFreshAnalysis", () => {
     expect(needsFreshAnalysis("2026-09-13T10:00:00Z", "2026-09-13T11:00:00Z")).toBe(true);
   });
 });
+
+import { getLatestAnalysis } from "./ai-analyses";
+
+describe("getLatestAnalysis", () => {
+  it("returns the most recent full analysis for the match", async () => {
+    const limit = vi.fn().mockResolvedValue({
+      data: [
+        {
+          team_analyst_text: "takim analizi",
+          betting_analyst_text: "bahis analizi",
+          commentator_text: "yorum",
+          summary_text: "ozet",
+          model_used: "gemini-3.5-flash-lite",
+          generated_at: "2026-09-13T10:00:00Z",
+        },
+      ],
+      error: null,
+    });
+    const order = vi.fn(() => ({ limit }));
+    const eq = vi.fn(() => ({ order }));
+    const select = vi.fn(() => ({ eq }));
+    const from = vi.fn(() => ({ select }));
+
+    const result = await getLatestAnalysis({ from } as any, "m1");
+
+    expect(from).toHaveBeenCalledWith("ai_analyses");
+    expect(eq).toHaveBeenCalledWith("match_id", "m1");
+    expect(result).toEqual({
+      teamAnalystText: "takim analizi",
+      bettingAnalystText: "bahis analizi",
+      commentatorText: "yorum",
+      summaryText: "ozet",
+      modelUsed: "gemini-3.5-flash-lite",
+      generatedAt: "2026-09-13T10:00:00Z",
+    });
+  });
+
+  it("returns null when no analysis exists yet", async () => {
+    const limit = vi.fn().mockResolvedValue({ data: [], error: null });
+    const order = vi.fn(() => ({ limit }));
+    const eq = vi.fn(() => ({ order }));
+    const select = vi.fn(() => ({ eq }));
+    const from = vi.fn(() => ({ select }));
+    const result = await getLatestAnalysis({ from } as any, "m1");
+    expect(result).toBeNull();
+  });
+
+  it("throws when the query fails", async () => {
+    const limit = vi.fn().mockResolvedValue({ data: null, error: { message: "boom" } });
+    const order = vi.fn(() => ({ limit }));
+    const eq = vi.fn(() => ({ order }));
+    const select = vi.fn(() => ({ eq }));
+    const from = vi.fn(() => ({ select }));
+    await expect(getLatestAnalysis({ from } as any, "m1")).rejects.toThrow("boom");
+  });
+});

@@ -33,3 +33,45 @@ export function needsFreshAnalysis(analysisGeneratedAt: string | null, latestDat
   if (!latestDataFetchedAt) return false;
   return new Date(latestDataFetchedAt).getTime() > new Date(analysisGeneratedAt).getTime();
 }
+
+export interface LatestAnalysis {
+  teamAnalystText: string;
+  bettingAnalystText: string;
+  commentatorText: string;
+  summaryText: string;
+  modelUsed: string;
+  generatedAt: string;
+}
+
+export async function getLatestAnalysis(supabase: SupabaseClient, matchId: string): Promise<LatestAnalysis | null> {
+  const { data, error } = await supabase
+    .from("ai_analyses")
+    .select("team_analyst_text, betting_analyst_text, commentator_text, summary_text, model_used, generated_at")
+    .eq("match_id", matchId)
+    .order("generated_at", { ascending: false })
+    .limit(1);
+
+  if (error) throw new Error(`AI analizi alinamadi: ${error.message}`);
+
+  interface RawRow {
+    team_analyst_text: string;
+    betting_analyst_text: string;
+    commentator_text: string;
+    summary_text: string;
+    model_used: string;
+    generated_at: string;
+  }
+
+  const rows = (data ?? []) as RawRow[];
+  const row = rows[0];
+  if (!row) return null;
+
+  return {
+    teamAnalystText: row.team_analyst_text,
+    bettingAnalystText: row.betting_analyst_text,
+    commentatorText: row.commentator_text,
+    summaryText: row.summary_text,
+    modelUsed: row.model_used,
+    generatedAt: row.generated_at,
+  };
+}
