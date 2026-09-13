@@ -13,3 +13,36 @@ export async function insertOddsSnapshots(supabase: SupabaseClient, rows: OddsIn
   const { error } = await supabase.from("odds_snapshots").insert(rows);
   if (error) throw new Error(`Oranlar kaydedilemedi: ${error.message}`);
 }
+
+export interface LatestOddsQuote {
+  outcome: string;
+  bookmaker: string;
+  price: number;
+  fetchedAt: string;
+}
+
+export async function getLatestOdds(supabase: SupabaseClient, matchId: string): Promise<LatestOddsQuote[]> {
+  const { data, error } = await supabase
+    .from("odds_snapshots")
+    .select("outcome, bookmaker, price, fetched_at")
+    .eq("match_id", matchId)
+    .order("fetched_at", { ascending: false })
+    .limit(20);
+
+  if (error) throw new Error(`Oranlar alinamadi: ${error.message}`);
+
+  interface RawRow {
+    outcome: string;
+    bookmaker: string;
+    price: number;
+    fetched_at: string;
+  }
+
+  const rows = (data ?? []) as RawRow[];
+  if (rows.length === 0) return [];
+
+  const latestFetchedAt = rows[0].fetched_at;
+  return rows
+    .filter((r) => r.fetched_at === latestFetchedAt)
+    .map((r) => ({ outcome: r.outcome, bookmaker: r.bookmaker, price: r.price, fetchedAt: r.fetched_at }));
+}
