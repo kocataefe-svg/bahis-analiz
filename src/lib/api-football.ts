@@ -36,9 +36,16 @@ async function apiFootballFetch(path: string, params: Record<string, string>): P
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.set(key, value);
   }
-  const res = await fetch(url.toString(), {
-    headers: { "x-apisports-key": getApiKey() },
-  });
+  const apiKey = getApiKey();
+  let res: Response;
+  try {
+    res = await fetch(url.toString(), {
+      headers: { "x-apisports-key": apiKey },
+    });
+  } catch (err) {
+    console.warn(`API-Football istegi basarisiz (ag hatasi): ${path} ->`, err);
+    return null;
+  }
   if (!res.ok) {
     console.warn(`API-Football istegi basarisiz: ${path} -> ${res.status}`);
     return null;
@@ -87,7 +94,14 @@ export async function getRecentFixtures(teamId: number, count: number): Promise<
   });
   const list = data?.response ?? [];
   return list
-    .filter((item: any) => item?.fixture?.id && item?.goals?.home != null && item?.goals?.away != null)
+    .filter(
+      (item: any) =>
+        item?.fixture?.id &&
+        item?.goals?.home != null &&
+        item?.goals?.away != null &&
+        item?.teams?.home?.id != null &&
+        item?.teams?.away?.id != null
+    )
     .map((item: any) => {
       const isHome = item.teams.home.id === teamId;
       const goalsFor = isHome ? item.goals.home : item.goals.away;

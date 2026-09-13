@@ -142,3 +142,11 @@ describe("missing API key", () => {
     await expect(searchLeague("Premier League", "England")).rejects.toThrow();
   });
 });
+
+describe("network errors", () => {
+  it("returns null when fetch rejects due to network error", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+    const result = await searchLeague("Premier League", "England");
+    expect(result).toBeNull();
+  });
+});
