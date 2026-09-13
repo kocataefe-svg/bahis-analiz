@@ -43,3 +43,6 @@ next-env.d.ts
 
 # git worktrees
 .worktrees
+
+# claude code local settings (contains API tokens - never commit)
+.claude/settings.local.json
