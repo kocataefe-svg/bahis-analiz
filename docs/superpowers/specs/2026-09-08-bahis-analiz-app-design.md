@@ -18,21 +18,20 @@ sunan, mobil uyumlu, tamamen ücretsiz altyapı üzerinde çalışan bir web uyg
 
 ```
 ┌─────────────────┐      ┌──────────────────────┐      ┌─────────────────┐
-│  Next.js (Vercel)│◄────►│ Supabase (Postgres)   │◄────►│ Zamanlanmış Job  │
-│  - UI (lig/maç    │      │ - leagues              │      │ (Vercel Cron)    │
-│    seçimi)         │      │ - matches              │      │ - API-Football    │
-│  - API routes      │      │ - odds_snapshots       │      │   veri çeker      │
-│  - Analiz görünümü │      │ - ai_analyses          │      │ - The Odds API     │
-└─────────────────┘      │ - manual_odds (kullanıcı│      │   oran çeker       │
-                            │   girişi)               │      │ - Gemini API'ye    │
-                            └──────────────────────┘      │   analiz ürettirir │
-                                                             └─────────────────┘
+│  Next.js (Vercel)│◄────►│ Supabase (Postgres)   │◄────►│ GitHub Actions   │
+│  - UI (lig/maç    │      │ - leagues              │      │ (zamanlanmış)     │
+│    seçimi)         │      │ - matches              │      │ - API route'larını│
+│  - API routes      │      │ - odds_snapshots       │      │   HTTP ile tetikler│
+│  - Analiz görünümü │      │ - ai_analyses          │      │ - veri çekme + AI  │
+└─────────────────┘      │ - manual_odds (kullanıcı│      │   analiz iş route'ta│
+                            │   girişi)               │      │   çalışır          │
+                            └──────────────────────┘      └─────────────────┘
 ```
 
 - **Frontend + Backend:** Next.js (App Router), tek proje, Vercel'e deploy.
 - **Veritabanı:** Supabase (ücretsiz Postgres planı).
-- **Zamanlanmış veri çekme:** Vercel Cron (ücretsiz plan sınırları içinde, günde birkaç tetikleme) → API route'u tetikler → veri çeker → DB'ye yazar.
-- **AI analiz üretimi:** Aynı zamanlanmış akış içinde, yeni/güncellenmiş maçlar için Gemini API çağrılır, sonuç DB'ye yazılır (kullanıcı sayfa açtığında yeniden üretilmez — maliyet ve hız için cache şart).
+- **Zamanlanmış veri çekme:** ~~Vercel Cron~~ **GitHub Actions scheduled workflow** (ücretsiz, sınırsız zamanlama) → HTTP ile korumalı bir API route'unu tetikler (paylaşılan sır/`CRON_SECRET` header ile) → route veri çeker → DB'ye yazar. Vercel'in ücretsiz (Hobby) planındaki cron job'ları günde en fazla 1 kez çalışabildiği için (doğrulanmış kısıt), günde birden fazla tetikleme ihtiyacı GitHub Actions ile karşılanıyor — repo GitHub'da olduğu için ek maliyet yok.
+- **AI analiz üretimi:** Aynı akış içinde, yeni/güncellenmiş maçlar için Gemini API çağrılır, sonuç DB'ye yazılır (kullanıcı sayfa açtığında yeniden üretilmez — maliyet ve hız için cache şart).
 
 ## 3. Veri kaynakları
 
@@ -46,6 +45,8 @@ sunan, mobil uyumlu, tamamen ücretsiz altyapı üzerinde çalışan bir web uyg
 - Oranlar uluslararası bookmaker'lardan gelir, İddaa/Nesine/Bilyoner'in kendi oranı **değildir**. İddaa marjı (~%23) uluslararası "sharp" kitapçılara (~%2-3) göre çok daha yüksektir — yani gösterilen oran, gerçek oynadığınız sitedeki oranla birebir aynı olmayacaktır.
 - "Bu orana ne kadar oynandığı" (gerçek bahis hacmi) hiçbir kaynakta yoktur. Bunun yerine kendi periyodik çekimlerimizden **oran zaman serisi** ("oran 48 saatte X'ten Y'ye değişti") gösterilir — bu gerçek ve ücretsiz bir veridir, hacim verisi değildir, arayüzde bu fark netçe belirtilir.
 - Küçük liglerde (Norveç, İsveç, İsviçre, Hollanda vb.) API-Football veri kapsamı (özellikle sakatlık/kadro) büyük liglere göre daha sınırlı olabilir; eksik veri varsa analiz bunu belirterek devam eder, hata vermez.
+- **The Odds API, TFF 1. Lig'i (Türkiye 2. ligi) kapsamıyor** (doğrulanmış — `/v4/sports` listesinde yok). Bu ligde oran verisi olmayacak, sadece takım istatistikleri/analiz olacak.
+- **Gerçekçi güncelleme sıklığı:** The Odds API'nin aylık 500 istek kotası, ~13 lig × günlük çağrı sayısı ile bölününce günde **~1 kez** oran senkronizasyonuna izin veriyor (13 lig × 30 gün ≈ 390 istek, tampon payı bırakır). API-Football'un günlük 100 istek kotası ise fikstür senkronizasyonunu günde 2 kez, takım istatistik/sakatlık senkronizasyonunu günde 1 kez (maç başına sınırlı istek sayısıyla) çalıştırmaya izin veriyor. Yani veriler "anlık" değil, günde 1-2 kez güncellenen bir görünüm sunacak — bu, ücretsiz kalmanın maliyeti.
 
 ## 4. Varsayılan lig listesi (kullanıcı checkbox ile seçer)
 
@@ -76,9 +77,9 @@ Liste kod içinde yapılandırılabilir bir sabit olacak (yeni lig eklemek kolay
 
 ## 6. Veri modeli (özet)
 
-- `leagues`: id, name, country, api_football_id, odds_api_sport_key, active (checkbox için)
-- `matches`: id, league_id, home_team, away_team, kickoff_at, api_football_fixture_id
-- `team_stats_snapshots`: match_id, team, form, injuries(json), cards(json), last_matches(json), shots/goals istatistikleri
+- `leagues`: id, name, country, api_football_id, odds_api_sport_key, current_season, active (checkbox için)
+- `matches`: id, league_id, home_team, away_team, home_team_api_id, away_team_api_id, kickoff_at, api_football_fixture_id
+- `team_stats_snapshots`: match_id, team, form, injuries(json), cards(json), last_matches(json), stats(json — ham API verisi, kesin alan adları AI yorumlama aşamasında okunur)
 - `odds_snapshots`: match_id, market, outcome, bookmaker, price, fetched_at (zaman serisi için append-only)
 - `ai_analyses`: match_id, generated_at, team_analyst_text, betting_analyst_text, commentator_text, summary_text, model_used
 - `manual_odds`: match_id, entered_by, market, outcome, price, entered_at
