@@ -69,4 +69,30 @@ describe("POST /api/sync/matches", () => {
     ]);
     expect(body.totalUpserted).toBe(1);
   });
+
+  it("continues to the next league and reports a failure count when upsertMatches throws for one league", async () => {
+    vi.mocked(getActiveLeagues).mockResolvedValue([
+      { id: "l1", apiFootballId: 39, currentSeason: 2026, oddsApiSportKey: "soccer_epl" },
+      { id: "l2", apiFootballId: 61, currentSeason: 2026, oddsApiSportKey: "soccer_france_ligue_one" },
+    ]);
+    vi.mocked(getUpcomingFixtures).mockResolvedValue([
+      {
+        apiFixtureId: 1001,
+        kickoffAt: "2026-09-20T15:00:00Z",
+        homeTeam: "Manchester City",
+        awayTeam: "Arsenal",
+        homeTeamApiId: 50,
+        awayTeamApiId: 42,
+      },
+    ]);
+    vi.mocked(upsertMatches).mockReset().mockRejectedValueOnce(new Error("db down")).mockResolvedValueOnce(undefined);
+
+    const res = await POST(makeRequest("Bearer test-secret") as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(upsertMatches).toHaveBeenCalledTimes(2);
+    expect(body.totalUpserted).toBe(1);
+    expect(body.failed).toBe(1);
+  });
 });

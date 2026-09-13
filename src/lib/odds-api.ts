@@ -10,6 +10,28 @@ export interface OddsQuote {
   price: number;
 }
 
+interface RawOddsOutcome {
+  name: string;
+  price: number;
+}
+
+interface RawOddsMarket {
+  key: string;
+  outcomes?: RawOddsOutcome[];
+}
+
+interface RawOddsBookmaker {
+  key: string;
+  markets?: RawOddsMarket[];
+}
+
+interface RawOddsEvent {
+  home_team: string;
+  away_team: string;
+  commence_time: string;
+  bookmakers?: RawOddsBookmaker[];
+}
+
 function getApiKey(): string {
   const key = process.env.ODDS_API_KEY;
   if (!key) {
@@ -22,25 +44,24 @@ export async function getOddsForSport(sportKey: string): Promise<OddsQuote[]> {
   const url = new URL(`${ODDS_API_BASE_URL}/sports/${sportKey}/odds`);
   url.searchParams.set("apiKey", getApiKey());
   url.searchParams.set("regions", "eu");
-  url.searchParams.set("markets", "h2h,btts");
+  url.searchParams.set("markets", "h2h");
   url.searchParams.set("oddsFormat", "decimal");
 
-  let res;
+  let data: unknown;
   try {
-    res = await fetch(url.toString());
-  } catch (error) {
-    console.warn(`The Odds API istegi basarisiz: ${sportKey} -> network error`);
+    const res = await fetch(url.toString());
+    if (!res.ok) {
+      console.warn(`The Odds API istegi basarisiz: ${sportKey} -> ${res.status}`);
+      return [];
+    }
+    data = await res.json();
+  } catch (err) {
+    console.warn(`The Odds API istegi basarisiz (ag hatasi): ${sportKey} ->`, err);
     return [];
   }
 
-  if (!res.ok) {
-    console.warn(`The Odds API istegi basarisiz: ${sportKey} -> ${res.status}`);
-    return [];
-  }
-
-  const data = await res.json();
   const quotes: OddsQuote[] = [];
-  for (const event of data ?? []) {
+  for (const event of (data as RawOddsEvent[] | null) ?? []) {
     for (const bookmaker of event.bookmakers ?? []) {
       for (const market of bookmaker.markets ?? []) {
         for (const outcome of market.outcomes ?? []) {

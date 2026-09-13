@@ -15,7 +15,14 @@ export async function getActiveLeagues(supabase: SupabaseClient): Promise<SyncLe
 
   if (error) throw new Error(`Ligler alinamadi: ${error.message}`);
 
-  return (data ?? []).map((row: any) => ({
+  interface RawLeagueRow {
+    id: string;
+    api_football_id: number;
+    current_season: number | null;
+    odds_api_sport_key: string | null;
+  }
+
+  return ((data ?? []) as RawLeagueRow[]).map((row) => ({
     id: row.id,
     apiFootballId: row.api_football_id,
     currentSeason: row.current_season,

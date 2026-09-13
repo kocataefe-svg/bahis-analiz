@@ -44,7 +44,17 @@ export async function getUpcomingMatches(
 
   if (error) throw new Error(`Yaklasan maclar alinamadi: ${error.message}`);
 
-  return (data ?? []).map((row: any) => ({
+  interface RawMatchRow {
+    id: string;
+    api_football_fixture_id: number;
+    home_team: string;
+    away_team: string;
+    home_team_api_id: number;
+    away_team_api_id: number;
+    kickoff_at: string;
+  }
+
+  return ((data ?? []) as RawMatchRow[]).map((row) => ({
     id: row.id,
     apiFixtureId: row.api_football_fixture_id,
     homeTeam: row.home_team,

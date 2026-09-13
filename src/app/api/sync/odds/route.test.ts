@@ -85,4 +85,89 @@ describe("POST /api/sync/odds", () => {
     expect(body.totalInserted).toBe(1);
     expect(body.totalUnmatched).toBe(1);
   });
+
+  it("only matches a quote to a match within 12 hours of its commence time", async () => {
+    vi.mocked(getActiveLeagues).mockResolvedValue([
+      { id: "l1", apiFootballId: 39, currentSeason: 2026, oddsApiSportKey: "soccer_epl" },
+    ]);
+    vi.mocked(getUpcomingMatches).mockResolvedValue([
+      {
+        id: "m1",
+        apiFixtureId: 1001,
+        homeTeam: "Manchester City",
+        awayTeam: "Arsenal",
+        homeTeamApiId: 50,
+        awayTeamApiId: 42,
+        kickoffAt: "2026-09-20T15:00:00Z",
+      },
+      {
+        id: "m2",
+        apiFixtureId: 1002,
+        homeTeam: "Manchester City",
+        awayTeam: "Arsenal",
+        homeTeamApiId: 50,
+        awayTeamApiId: 42,
+        kickoffAt: "2026-10-05T15:00:00Z",
+      },
+    ]);
+    vi.mocked(getOddsForSport).mockResolvedValue([
+      {
+        homeTeam: "Manchester City",
+        awayTeam: "Arsenal",
+        commenceTime: "2026-10-05T18:00:00Z",
+        bookmaker: "pinnacle",
+        market: "h2h",
+        outcome: "Arsenal",
+        price: 4.2,
+      },
+    ]);
+
+    const res = await POST(makeRequest("Bearer test-secret") as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(insertOddsSnapshots).toHaveBeenCalledWith(expect.anything(), [
+      { match_id: "m2", market: "h2h", outcome: "Arsenal", bookmaker: "pinnacle", price: 4.2 },
+    ]);
+    expect(body.totalInserted).toBe(1);
+    expect(body.totalUnmatched).toBe(0);
+  });
+
+  it("continues to the next league and reports a failure count when insertOddsSnapshots throws for one league", async () => {
+    vi.mocked(getActiveLeagues).mockResolvedValue([
+      { id: "l1", apiFootballId: 39, currentSeason: 2026, oddsApiSportKey: "soccer_epl" },
+      { id: "l2", apiFootballId: 61, currentSeason: 2026, oddsApiSportKey: "soccer_france_ligue_one" },
+    ]);
+    vi.mocked(getUpcomingMatches).mockResolvedValue([
+      {
+        id: "m1",
+        apiFixtureId: 1001,
+        homeTeam: "Manchester City",
+        awayTeam: "Arsenal",
+        homeTeamApiId: 50,
+        awayTeamApiId: 42,
+        kickoffAt: "2026-09-20T15:00:00Z",
+      },
+    ]);
+    vi.mocked(getOddsForSport).mockResolvedValue([
+      {
+        homeTeam: "Manchester City",
+        awayTeam: "Arsenal",
+        commenceTime: "2026-09-20T15:00:00Z",
+        bookmaker: "pinnacle",
+        market: "h2h",
+        outcome: "Arsenal",
+        price: 4.2,
+      },
+    ]);
+    vi.mocked(insertOddsSnapshots).mockReset().mockRejectedValueOnce(new Error("db down")).mockResolvedValueOnce(undefined);
+
+    const res = await POST(makeRequest("Bearer test-secret") as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(insertOddsSnapshots).toHaveBeenCalledTimes(2);
+    expect(body.totalInserted).toBe(1);
+    expect(body.failed).toBe(1);
+  });
 });

@@ -1,7 +1,7 @@
 import { config } from "dotenv";
 config({ path: ".env.local" });
 
-import { getSupabaseClient } from "../src/lib/supabase";
+import { getSupabaseClient } from "../src/lib/supabase-core";
 import { searchLeague } from "../src/lib/api-football";
 import { LEAGUE_CATALOG } from "../src/lib/league-catalog";
 

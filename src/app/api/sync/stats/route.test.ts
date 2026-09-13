@@ -65,4 +65,38 @@ describe("POST /api/sync/stats", () => {
       expect.objectContaining({ match_id: "m1", team: "away", form: "L" }),
     );
   });
+
+  it("continues to the next match and reports a failure count when insertTeamStatsSnapshot throws for one match", async () => {
+    vi.mocked(getUpcomingMatches).mockResolvedValue([
+      {
+        id: "m1",
+        apiFixtureId: 1001,
+        homeTeam: "Manchester City",
+        awayTeam: "Arsenal",
+        homeTeamApiId: 50,
+        awayTeamApiId: 42,
+        kickoffAt: "2026-09-20T15:00:00Z",
+      },
+      {
+        id: "m2",
+        apiFixtureId: 1002,
+        homeTeam: "Liverpool",
+        awayTeam: "Chelsea",
+        homeTeamApiId: 51,
+        awayTeamApiId: 43,
+        kickoffAt: "2026-09-21T15:00:00Z",
+      },
+    ]);
+    vi.mocked(getRecentFixtures).mockImplementation(async (teamId: number) => [
+      { apiFixtureId: 1, date: "2026-09-01", opponent: "X", goalsFor: 1, goalsAgainst: 0, result: teamId === 50 || teamId === 51 ? "W" : "L" },
+    ]);
+    vi.mocked(insertTeamStatsSnapshot).mockReset().mockRejectedValueOnce(new Error("db down")).mockResolvedValue(undefined);
+
+    const res = await POST(makeRequest("Bearer test-secret") as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.processed).toBe(1);
+    expect(body.failed).toBe(1);
+  });
 });

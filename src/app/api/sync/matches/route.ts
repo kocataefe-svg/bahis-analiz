@@ -23,25 +23,32 @@ export async function POST(request: NextRequest) {
   const toDate = formatDate(new Date(Date.now() + SYNC_WINDOW_DAYS * 24 * 60 * 60 * 1000));
 
   let totalUpserted = 0;
+  let failed = 0;
 
   for (const league of leagues) {
-    const fixtures = await getUpcomingFixtures(league.apiFootballId, league.currentSeason as number, fromDate, toDate);
+    try {
+      const fixtures = await getUpcomingFixtures(league.apiFootballId, league.currentSeason as number, fromDate, toDate);
 
-    if (fixtures.length === 0) continue;
+      if (fixtures.length === 0) continue;
 
-    const rows = fixtures.map((f) => ({
-      league_id: league.id,
-      api_football_fixture_id: f.apiFixtureId,
-      home_team: f.homeTeam,
-      away_team: f.awayTeam,
-      home_team_api_id: f.homeTeamApiId,
-      away_team_api_id: f.awayTeamApiId,
-      kickoff_at: f.kickoffAt,
-    }));
+      const rows = fixtures.map((f) => ({
+        league_id: league.id,
+        api_football_fixture_id: f.apiFixtureId,
+        home_team: f.homeTeam,
+        away_team: f.awayTeam,
+        home_team_api_id: f.homeTeamApiId,
+        away_team_api_id: f.awayTeamApiId,
+        kickoff_at: f.kickoffAt,
+      }));
 
-    await upsertMatches(supabase, rows);
-    totalUpserted += rows.length;
+      await upsertMatches(supabase, rows);
+      totalUpserted += rows.length;
+    } catch (err) {
+      console.error(`Mac senkronizasyonu basarisiz: league=${league.id} ->`, err);
+      failed += 1;
+      continue;
+    }
   }
 
-  return NextResponse.json({ ok: true, totalUpserted });
+  return NextResponse.json({ ok: true, totalUpserted, failed });
 }
