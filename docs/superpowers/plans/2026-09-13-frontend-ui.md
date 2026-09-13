@@ -1581,8 +1581,7 @@ git commit -m "feat: mac detay sayfasi - istatistik, oran, grafik, ai analiz"
 - Create: `src/app/matches/[id]/actions.ts`
 - Create: `src/app/matches/[id]/manual-odds-form.tsx`
 - Create: `src/app/matches/[id]/manual-odds-form.module.css`
-- Modify: `src/app/matches/[id]/page.tsx` (manuel oran bölümü eklenir)
-- Modify: `src/app/matches/[id]/page.module.css` (form/karşılaştırma stilleri eklenir)
+- Modify: `src/app/matches/[id]/page.tsx` (manuel oran bölümü eklenir — mevcut `.section` ve `.oddsList` CSS sınıfları yeniden kullanılır, `page.module.css`'e yeni sınıf eklemeye gerek yoktur)
 
 **Interfaces:**
 - Consumes: `averagePricesByOutcome` (Task 4, `src/lib/odds-chart.ts`); `insertManualOdds`, `getManualOddsForMatch`, `ManualOddsRecord` (Task 3, `src/lib/db/manual-odds.ts`); `getLatestOdds` (mevcut, Plan 3); `getSupabaseClient` (mevcut).
