@@ -38,7 +38,7 @@ sunan, mobil uyumlu, tamamen ücretsiz altyapı üzerinde çalışan bir web uyg
 | Kaynak | Ne için | Plan | Limit |
 |---|---|---|---|
 | API-Football (api-sports.io) | Fikstür, takım istatistikleri, sakatlık, kart cezası, kadro, son maç sonuçları | Ücretsiz | 100 istek/gün |
-| The Odds API | Bookmaker oranları (1X2, KG Var/Yok vb.) | Ücretsiz | 500 istek/ay |
+| The Odds API | Bookmaker oranları (1X2 / maç sonucu) | Ücretsiz | 500 kredi/ay (kredi = istek değil, piyasa×bölge başına) |
 | Gemini API (Google) | AI analiz metni üretimi | Ücretsiz | Flash-Lite: 1500 istek/gün, 15 istek/dk |
 
 **Önemli kısıtlamalar (kullanıcıya açıkça gösterilecek):**
@@ -46,7 +46,9 @@ sunan, mobil uyumlu, tamamen ücretsiz altyapı üzerinde çalışan bir web uyg
 - "Bu orana ne kadar oynandığı" (gerçek bahis hacmi) hiçbir kaynakta yoktur. Bunun yerine kendi periyodik çekimlerimizden **oran zaman serisi** ("oran 48 saatte X'ten Y'ye değişti") gösterilir — bu gerçek ve ücretsiz bir veridir, hacim verisi değildir, arayüzde bu fark netçe belirtilir.
 - Küçük liglerde (Norveç, İsveç, İsviçre, Hollanda vb.) API-Football veri kapsamı (özellikle sakatlık/kadro) büyük liglere göre daha sınırlı olabilir; eksik veri varsa analiz bunu belirterek devam eder, hata vermez.
 - **The Odds API, TFF 1. Lig'i (Türkiye 2. ligi) kapsamıyor** (doğrulanmış — `/v4/sports` listesinde yok). Bu ligde oran verisi olmayacak, sadece takım istatistikleri/analiz olacak.
-- **Gerçekçi güncelleme sıklığı:** The Odds API'nin aylık 500 istek kotası, ~13 lig × günlük çağrı sayısı ile bölününce günde **~1 kez** oran senkronizasyonuna izin veriyor (13 lig × 30 gün ≈ 390 istek, tampon payı bırakır). API-Football'un günlük 100 istek kotası ise fikstür senkronizasyonunu günde 2 kez, takım istatistik/sakatlık senkronizasyonunu günde 1 kez (maç başına sınırlı istek sayısıyla) çalıştırmaya izin veriyor. Yani veriler "anlık" değil, günde 1-2 kez güncellenen bir görünüm sunacak — bu, ücretsiz kalmanın maliyeti.
+- **KG Var/Yok (BTTS) otomatik çekimde yok (düzeltme):** İlk tasarımda KG Var/Yok'u da çekeceğimizi varsaymıştık, ancak The Odds API bu piyasayı toplu (`/sports/{key}/odds`) endpoint'inde sunmuyor — sadece maç başına ayrı bir endpoint'te (kotayı hızla tüketir) mevcut. Plan 2 uygulamasında bu yüzden **sadece 1X2 (maç sonucu, `h2h`) oranı** otomatik çekiliyor. KG Var/Yok gerekirse ileride maç başına ayrı çağrı ile (kota bütçesi yeniden hesaplanarak) eklenebilir.
+- **Gerçekçi güncelleme sıklığı ve düzeltilmiş kota hesabı:** The Odds API krediyi **istek başına değil, piyasa×bölge başına** faturalandırıyor. 14 lig (TFF 1. Lig hariç) × 1 piyasa (`h2h`) × 1 bölge (`eu`) × günde 1 senkron × 30 gün ≈ **420 kredi/ay** — 500 kredi/ay kotasının içinde, ~80 kredi tampon payı bırakır. API-Football'un günlük 100 istek kotası fikstür senkronunu günde 2 kez (~30 istek), takım istatistik/sakatlık senkronunu günde 1 kez (en fazla 15 maç × 3 istek ≈ 45 istek) çalıştırmaya izin veriyor, toplam ~75/100. Yani veriler "anlık" değil, günde 1-2 kez güncellenen bir görünüm sunacak — bu, ücretsiz kalmanın maliyeti.
+- **Takım istatistiği kapsama sınırı:** Günlük istatistik senkronu en fazla 15 maçla sınırlı (API-Football kotası yüzünden). Yoğun bir hafta sonunda 15'ten fazla maç varsa, kapsam dışı kalan maçların `team_stats_snapshots` kaydı **hiç oluşmayabilir** (kickoff geçtikten sonra bir daha denenmez). Arayüz ve AI analiz aşaması (Plan 3/4) bunu "bu maç için yeterli istatistik verisi yok" şeklinde ele almalı, her maçta veri olacağını varsaymamalı.
 
 ## 4. Varsayılan lig listesi (kullanıcı checkbox ile seçer)
 
