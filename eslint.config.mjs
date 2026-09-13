@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Git worktrees (used for isolated plan development) are nested
+    // checkouts with their own .next/node_modules -- never lint into them.
+    ".worktrees/**",
   ]),
   {
     files: ["**/*.test.ts"],
