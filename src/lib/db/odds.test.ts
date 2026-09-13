@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { insertOddsSnapshots } from "./odds";
+import { insertOddsSnapshots, getLatestOdds, getOddsHistory } from "./odds";
 
 describe("insertOddsSnapshots", () => {
   it("does nothing when rows is empty", async () => {
@@ -26,8 +26,6 @@ describe("insertOddsSnapshots", () => {
     ).rejects.toThrow("boom");
   });
 });
-
-import { getLatestOdds } from "./odds";
 
 describe("getLatestOdds", () => {
   it("returns only the rows from the most recent fetch batch", async () => {
@@ -75,8 +73,6 @@ describe("getLatestOdds", () => {
     await expect(getLatestOdds({ from } as any, "m1")).rejects.toThrow("boom");
   });
 });
-
-import { getOddsHistory } from "./odds";
 
 describe("getOddsHistory", () => {
   it("returns the full snapshot history for a match, oldest first", async () => {

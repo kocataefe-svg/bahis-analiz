@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { insertAiAnalysis, getLatestAnalysisGeneratedAt, needsFreshAnalysis } from "./ai-analyses";
+import { insertAiAnalysis, getLatestAnalysisGeneratedAt, needsFreshAnalysis, getLatestAnalysis } from "./ai-analyses";
 
 describe("insertAiAnalysis", () => {
   it("inserts a row into ai_analyses", async () => {
@@ -88,8 +88,6 @@ describe("needsFreshAnalysis", () => {
     expect(needsFreshAnalysis("2026-09-13T10:00:00Z", "2026-09-13T11:00:00Z")).toBe(true);
   });
 });
-
-import { getLatestAnalysis } from "./ai-analyses";
 
 describe("getLatestAnalysis", () => {
   it("returns the most recent full analysis for the match", async () => {
