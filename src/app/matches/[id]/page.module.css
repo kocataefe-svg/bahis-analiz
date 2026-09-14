@@ -1,0 +1,94 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+.league {
+  font-size: 13px;
+  opacity: 0.6;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.kickoff {
+  font-size: 14px;
+  opacity: 0.7;
+  margin-bottom: 8px;
+}
+
+.section {
+  border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  padding-top: 16px;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 480px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.teamStats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.recentMatches {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.oddsList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.chartLegend {
+  list-style: none;
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.analysis {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.summary {
+  font-weight: 600;
+}
+
+.noData {
+  opacity: 0.6;
+  font-size: 13px;
+  font-style: italic;
+}
