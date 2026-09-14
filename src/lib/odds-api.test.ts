@@ -18,6 +18,7 @@ describe("getOddsForSport", () => {
   it("flattens events/bookmakers/markets/outcomes into a flat quote list", async () => {
     mockFetchOnce([
       {
+        id: "evt1",
         home_team: "Manchester City",
         away_team: "Arsenal",
         commence_time: "2026-09-20T15:00:00Z",
@@ -41,6 +42,7 @@ describe("getOddsForSport", () => {
     const result = await getOddsForSport("soccer_epl");
     expect(result).toEqual([
       {
+        eventId: "evt1",
         homeTeam: "Manchester City",
         awayTeam: "Arsenal",
         commenceTime: "2026-09-20T15:00:00Z",
@@ -50,6 +52,7 @@ describe("getOddsForSport", () => {
         price: 1.8,
       },
       {
+        eventId: "evt1",
         homeTeam: "Manchester City",
         awayTeam: "Arsenal",
         commenceTime: "2026-09-20T15:00:00Z",
@@ -59,6 +62,7 @@ describe("getOddsForSport", () => {
         price: 4.2,
       },
       {
+        eventId: "evt1",
         homeTeam: "Manchester City",
         awayTeam: "Arsenal",
         commenceTime: "2026-09-20T15:00:00Z",
