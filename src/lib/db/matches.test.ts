@@ -9,37 +9,39 @@ describe("upsertMatches", () => {
     expect(from).not.toHaveBeenCalled();
   });
 
-  it("upserts rows with the fixture id as the conflict key", async () => {
-    const upsert = vi.fn().mockResolvedValue({ error: null });
+  it("upserts rows with the odds api event id as the conflict key and returns ids", async () => {
+    const select = vi.fn().mockResolvedValue({
+      data: [{ id: "m1", odds_api_event_id: "evt1" }],
+      error: null,
+    });
+    const upsert = vi.fn(() => ({ select }));
     const from = vi.fn(() => ({ upsert }));
     const rows = [
       {
         league_id: "l1",
-        api_football_fixture_id: 1001,
+        odds_api_event_id: "evt1",
         home_team: "A",
         away_team: "B",
-        home_team_api_id: 1,
-        away_team_api_id: 2,
         kickoff_at: "2026-09-20T15:00:00Z",
       },
     ];
-    await upsertMatches({ from } as any, rows);
+    const result = await upsertMatches({ from } as any, rows);
     expect(from).toHaveBeenCalledWith("matches");
-    expect(upsert).toHaveBeenCalledWith(rows, { onConflict: "api_football_fixture_id" });
+    expect(upsert).toHaveBeenCalledWith(rows, { onConflict: "odds_api_event_id" });
+    expect(result).toEqual([{ id: "m1", oddsApiEventId: "evt1" }]);
   });
 
   it("throws when the upsert fails", async () => {
-    const upsert = vi.fn().mockResolvedValue({ error: { message: "boom" } });
+    const select = vi.fn().mockResolvedValue({ data: null, error: { message: "boom" } });
+    const upsert = vi.fn(() => ({ select }));
     const from = vi.fn(() => ({ upsert }));
     await expect(
       upsertMatches({ from } as any, [
         {
           league_id: "l1",
-          api_football_fixture_id: 1001,
+          odds_api_event_id: "evt1",
           home_team: "A",
           away_team: "B",
-          home_team_api_id: 1,
-          away_team_api_id: 2,
           kickoff_at: "2026-09-20T15:00:00Z",
         },
       ]),
@@ -53,11 +55,8 @@ describe("getUpcomingMatches", () => {
       data: [
         {
           id: "m1",
-          api_football_fixture_id: 1001,
           home_team: "A",
           away_team: "B",
-          home_team_api_id: 1,
-          away_team_api_id: 2,
           kickoff_at: "2026-09-20T15:00:00Z",
         },
       ],
@@ -76,11 +75,8 @@ describe("getUpcomingMatches", () => {
     expect(result).toEqual([
       {
         id: "m1",
-        apiFixtureId: 1001,
         homeTeam: "A",
         awayTeam: "B",
-        homeTeamApiId: 1,
-        awayTeamApiId: 2,
         kickoffAt: "2026-09-20T15:00:00Z",
       },
     ]);
