@@ -1,13 +1,13 @@
 # Bahis Analiz Uygulaması — Tasarım Spec'i
 
-**Tarih:** 2026-09-08
+**Tarih:** 2026-09-08 (2026-09-14'te veri kaynağı mimarisi düzeltildi — bkz. §3)
 **Durum:** Onay bekliyor (kullanıcı incelemesi)
 
 ## 1. Amaç
 
 Kullanıcının (ve 3-5 arkadaşının) seçtiği Avrupa/Türkiye liglerindeki maçlar için:
 - Güncel oran verisi
-- Takım formu, sakatlık, kart cezası, istatistik verisi
+- İsteğe bağlı, tek tıkla tetiklenen sakatlık/form/H2H araştırması (Gemini + Google Search grounding)
 - Çok personalı bir AI "bahis analiz ekibi" tarafından üretilen yazılı yorum/analiz
 
 sunan, mobil uyumlu, tamamen ücretsiz altyapı üzerinde çalışan bir web uygulaması.
@@ -35,21 +35,21 @@ sunan, mobil uyumlu, tamamen ücretsiz altyapı üzerinde çalışan bir web uyg
 
 ## 3. Veri kaynakları
 
+> **2026-09-14 düzeltmesi — API-Football canlı testte kullanılamaz çıktı:** Gerçek deploy'da API-Football'un ücretsiz planının **hesap genelinde** güncel sezona (2026) hiç erişimi olmadığı doğrulandı (`{"errors":{"plan":"Free plans do not have access to this season, try from 2022 to 2024."}}`) — fikstür, sakatlık, `last=N` (son maç formu) uçlarının hepsinde, sezon parametresi verilen her istekte aynı hata alındı. Bu, ilk tasarımda öngörülemeyen, sadece canlı test ile ortaya çıkan bir kısıt. Sonuç: **API-Football tamamen çıkarıldı.** Fikstür artık The Odds API'nin kendi event listesinden geliyor; sakatlık/form/H2H ise aşağıda açıklanan Gemini tabanlı isteğe bağlı araştırmaya devredildi. Maçkolik/İddaa/Nesine/Sofascore/TheSportsDB gibi alternatifler ayrıca araştırıldı ve reddedildi (AI-crawler'ı `robots.txt`/`Content-Signal` ile engelliyorlar, veya İddaa/Nesine gibi lisanslı bahis tekeli + Sportradar/Betradar lisanslı veri riski taşıyorlar) — bkz. altta "Sakatlık/form/H2H" maddesi.
+
 | Kaynak | Ne için | Plan | Limit |
 |---|---|---|---|
-| API-Football (api-sports.io) | Fikstür, takım istatistikleri, sakatlık, kart cezası, kadro, son maç sonuçları | Ücretsiz | 100 istek/gün |
-| The Odds API | Bookmaker oranları (1X2 / maç sonucu) | Ücretsiz | 500 kredi/ay (kredi = istek değil, piyasa×bölge başına) |
-| Gemini API (Google) | AI analiz metni üretimi | Ücretsiz | Flash-Lite: 1500 istek/gün, 30 istek/dk |
+| The Odds API | Fikstür (event id/takım/başlama saati) + bookmaker oranları (1X2 / maç sonucu) | Ücretsiz | 500 kredi/ay (kredi = istek değil, piyasa×bölge başına) |
+| Gemini API (Google) | AI analiz metni üretimi (arka plan) + isteğe bağlı sakatlık/form/H2H araştırması (Google Search grounding, kullanıcı tetikler) | Ücretsiz | Flash-Lite: 1500 istek/gün, 30 istek/dk; Search grounding: 5.000 istek/ay (Gemini 3.x, paylaşımlı) |
 
 **Önemli kısıtlamalar (kullanıcıya açıkça gösterilecek):**
 - Oranlar uluslararası bookmaker'lardan gelir, İddaa/Nesine/Bilyoner'in kendi oranı **değildir**. İddaa marjı (~%23) uluslararası "sharp" kitapçılara (~%2-3) göre çok daha yüksektir — yani gösterilen oran, gerçek oynadığınız sitedeki oranla birebir aynı olmayacaktır.
 - "Bu orana ne kadar oynandığı" (gerçek bahis hacmi) hiçbir kaynakta yoktur. Bunun yerine kendi periyodik çekimlerimizden **oran zaman serisi** ("oran 48 saatte X'ten Y'ye değişti") gösterilir — bu gerçek ve ücretsiz bir veridir, hacim verisi değildir, arayüzde bu fark netçe belirtilir.
-- Küçük liglerde (Norveç, İsveç, İsviçre, Hollanda vb.) API-Football veri kapsamı (özellikle sakatlık/kadro) büyük liglere göre daha sınırlı olabilir; eksik veri varsa analiz bunu belirterek devam eder, hata vermez.
-- **The Odds API, TFF 1. Lig'i (Türkiye 2. ligi) kapsamıyor** (doğrulanmış — `/v4/sports` listesinde yok). Bu ligde oran verisi olmayacak, sadece takım istatistikleri/analiz olacak.
-- **KG Var/Yok (BTTS) otomatik çekimde yok (düzeltme):** İlk tasarımda KG Var/Yok'u da çekeceğimizi varsaymıştık, ancak The Odds API bu piyasayı toplu (`/sports/{key}/odds`) endpoint'inde sunmuyor — sadece maç başına ayrı bir endpoint'te (kotayı hızla tüketir) mevcut. Plan 2 uygulamasında bu yüzden **sadece 1X2 (maç sonucu, `h2h`) oranı** otomatik çekiliyor. KG Var/Yok gerekirse ileride maç başına ayrı çağrı ile (kota bütçesi yeniden hesaplanarak) eklenebilir.
-- **Gerçekçi güncelleme sıklığı ve düzeltilmiş kota hesabı:** The Odds API krediyi **istek başına değil, piyasa×bölge başına** faturalandırıyor. 14 lig (TFF 1. Lig hariç) × 1 piyasa (`h2h`) × 1 bölge (`eu`) × günde 1 senkron × 30 gün ≈ **420 kredi/ay** — 500 kredi/ay kotasının içinde, ~80 kredi tampon payı bırakır. API-Football'un günlük 100 istek kotası fikstür senkronunu günde 2 kez (~30 istek), takım istatistik/sakatlık senkronunu günde 1 kez (en fazla 15 maç × 3 istek ≈ 45 istek) çalıştırmaya izin veriyor, toplam ~75/100. Yani veriler "anlık" değil, günde 1-2 kez güncellenen bir görünüm sunacak — bu, ücretsiz kalmanın maliyeti.
-- **Takım istatistiği kapsama sınırı:** Günlük istatistik senkronu en fazla 15 maçla sınırlı (API-Football kotası yüzünden). Yoğun bir hafta sonunda 15'ten fazla maç varsa, kapsam dışı kalan maçların `team_stats_snapshots` kaydı **hiç oluşmayabilir** (kickoff geçtikten sonra bir daha denenmez). Arayüz ve AI analiz aşaması (Plan 3/4) bunu "bu maç için yeterli istatistik verisi yok" şeklinde ele almalı, her maçta veri olacağını varsaymamalı.
-- **Gemini model güncellemesi (Plan 3 öncesi düzeltme):** İlk tasarımda seçilen `gemini-2.5-flash-lite`'ın Ekim 2026'da (yaklaşık 16-20 Ekim) emekliye ayrılacağı doğrulandı — Plan 3'ün üzerine kurulacağı bir modelin bir ay içinde kaldırılması riskli olduğundan, **`gemini-3.5-flash-lite`** kullanılacak (aynı ücretsiz tier, hatta biraz daha yüksek limit: 1500 istek/gün, 30 istek/dk, retirement tarihi duyurulmamış). SDK tarafı da güncel: `@google/genai` paketinde artık `ai.models.generateContent()` değil, `ai.interactions.create({ model, input, response_format: { type: "text", mime_type: "application/json", schema: {...} } })` şekli kullanılıyor — yapılandırılmış JSON çıktısı (3 persona + özet) bu şekilde tek çağrıda alınacak.
+- **TFF 1. Lig kapsam dışı:** The Odds API bu ligi kapsamıyor (doğrulanmış — `/v4/sports` listesinde yok). Fikstür artık tamamen Odds API'den geldiği için bu lig katalogdan tamamen çıkarıldı (ne fikstür ne oran var).
+- **KG Var/Yok (BTTS) otomatik çekimde yok:** The Odds API bu piyasayı toplu (`/sports/{key}/odds`) endpoint'inde sunmuyor — sadece maç başına ayrı bir endpoint'te (kotayı hızla tüketir) mevcut. Bu yüzden **sadece 1X2 (maç sonucu, `h2h`) oranı** otomatik çekiliyor.
+- **Kota hesabı:** The Odds API krediyi **istek başına değil, piyasa×bölge başına** faturalandırıyor. 13 lig (TFF 1. Lig hariç, Milli Maçlar dahil) × 1 piyasa (`h2h`) × 1 bölge (`eu`) × günde 1 senkron × 30 gün ≈ **390 kredi/ay** — 500 kredi/ay kotasının içinde. Aynı çağrı hem fikstürü hem oranı getirdiği için (Odds API event objesi `id`/`home_team`/`away_team`/`commence_time`'ı bookmaker verisiyle birlikte döndürüyor) fikstür senkronu ek kota **tüketmiyor**.
+- **Sakatlık/form/H2H artık isteğe bağlı, arka planda otomatik değil:** API-Football'un kullanılamaz çıkması üzerine, maç detay sayfasında bir **"Araştır" butonu** var. Tıklanınca Gemini, Google Search grounding aracıyla genel spor haberi kaynaklarını (kulüp siteleri, TFF, Transfermarkt, spor basını) arar; sakatlık/ceza, her iki takımın son 5 resmi maçı ve varsa aralarındaki son karşılaşmaları serbest metin olarak özetler, kaynak linkleriyle birlikte. Sonuç DB'de saklanır (`match_research`), aynı maça tekrar tıklayan başka bir kullanıcı yeni bir Gemini çağrısı tetiklemez, kayıtlı sonucu görür. Bu veri **kesin/yapılandırılmış istatistik değil**, AI'nin bulabildiği güncel haber/kaynak özetidir — emin olmadığı bilgiyi "bulunamadı" diyerek belirtmesi promptla zorunlu kılınır, uydurma riskini azaltır (canlı testte doğrulandı). Maçkolik/İddaa/Nesine'nin oran verisine veya JS ile yüklenen sayfalarına bu araştırma **erişmiyor** — bunlar test edildi ve hem teknik (JS-render, veri gelmiyor) hem hukuki (İddaa/Nesine lisanslı bahis tekeli + Sportradar/Betradar veri riski, Maçkolik'in `robots.txt`'i `anthropic-ai`'ı engelliyor) nedenlerle kapsam dışı bırakıldı; bu araştırma sadece genel (bahis dışı) spor haberciliği kaynaklarını tarıyor.
+- **Gemini model güncellemesi (Plan 3 öncesi düzeltme):** İlk tasarımda seçilen `gemini-2.5-flash-lite`'ın Ekim 2026'da (yaklaşık 16-20 Ekim) emekliye ayrılacağı doğrulandı — Plan 3'ün üzerine kurulacağı bir modelin bir ay içinde kaldırılması riskli olduğundan, **`gemini-3.5-flash-lite`** kullanılacak (aynı ücretsiz tier, hatta biraz daha yüksek limit: 1500 istek/gün, 30 istek/dk, retirement tarihi duyurulmamış). SDK tarafı da güncel: arka plan analiz üretimi `ai.interactions.create({ model, input, response_format: {...} })` ile yapılandırılmış JSON döndürür; isteğe bağlı araştırma ise `ai.models.generateContent({ model, contents, config: { tools: [{ googleSearch: {} }] } })` ile serbest metin + kaynak listesi döndürür (iki farklı çağrı şekli, iki farklı amaç).
 
 ## 4. Varsayılan lig listesi (kullanıcı checkbox ile seçer)
 
@@ -58,7 +58,7 @@ sunan, mobil uyumlu, tamamen ücretsiz altyapı üzerinde çalışan bir web uyg
 - İtalya: Serie A
 - Almanya: Bundesliga
 - Fransa: Ligue 1
-- Türkiye: Süper Lig, TFF 1. Lig
+- Türkiye: Süper Lig (**TFF 1. Lig kapsam dışı — bkz. §3**)
 - Norveç: Eliteserien
 - İsveç: Allsvenskan
 - İsviçre: Super League
@@ -72,26 +72,29 @@ Liste kod içinde yapılandırılabilir bir sabit olacak (yeni lig eklemek kolay
 
 1. Ana sayfada lig listesi checkbox olarak gösterilir → seçilen liglerin güncel/yaklaşan maçları listelenir.
 2. Kullanıcı bir maça tıklar → detay sayfası açılır:
-   - Takım formu, son maçlar, sakatlık/ceza durumu (API-Football'dan)
    - Güncel referans oran + oran geçmişi grafiği (The Odds API + kendi snapshot'larımız)
-   - 3 persona analiz: **Takım Analizcisi** (form/sakatlık/önemli an yorumu — örn. "play-off için 3 puana mecburlar"), **Bahis Analizcisi** (istatistik + oran okuma, value değerlendirmesi), **Yorumcu** (genel maç yorumu/tahmini)
+   - 3 persona analiz: **Takım Analizcisi** (form/sakatlık/önemli an yorumu — örn. "play-off için 3 puana mecburlar"), **Bahis Analizcisi** (istatistik + oran okuma, value değerlendirmesi), **Yorumcu** (genel maç yorumu/tahmini) — bu analiz artık sadece oran verisine dayanıyor, sakatlık/form verisi yoksa promptta bu açıkça belirtiliyor
    - Genel "AI görüşü" özet kutusu
+   - **"Araştır" butonu:** tıklanınca Gemini (Google Search grounding) sakatlık/ceza, son 5 maç formu ve varsa H2H geçmişini kaynaklı bir metin olarak getirir; sonuç kalıcıdır, tekrar tıklanınca yeniden sorgulanmaz
    - "İddaa/Bilyoner'de gördüğünüz oranı girin" alanı → girilirse referans oranla fark ve yorum gösterilir
 
 ## 6. Veri modeli (özet)
 
-- `leagues`: id, name, country, api_football_id, odds_api_sport_key, current_season, active (checkbox için)
-- `matches`: id, league_id, home_team, away_team, home_team_api_id, away_team_api_id, kickoff_at, api_football_fixture_id
-- `team_stats_snapshots`: match_id, team, form, injuries(json), cards(json), last_matches(json), stats(json — ham API verisi, kesin alan adları AI yorumlama aşamasında okunur)
+- `leagues`: id, name, country, odds_api_sport_key, active (checkbox için)
+- `matches`: id, league_id, home_team, away_team, kickoff_at, odds_api_event_id (Odds API'nin döndürdüğü stabil event id, unique)
 - `odds_snapshots`: match_id, market, outcome, bookmaker, price, fetched_at (zaman serisi için append-only)
 - `ai_analyses`: match_id, generated_at, team_analyst_text, betting_analyst_text, commentator_text, summary_text, model_used
 - `manual_odds`: match_id, entered_by, market, outcome, price, entered_at
+- `match_research`: match_id (unique), content (metin), sources (json — {url,title}[]), model_used, generated_at — "Araştır" butonunun sonucu, maç başına tek kayıt
+
+**Kaldırılan:** `team_stats_snapshots` tablosu ve `leagues.api_football_id`/`current_season`, `matches.api_football_fixture_id`/`home_team_api_id`/`away_team_api_id` kolonları — API-Football'un çıkarılmasıyla birlikte tamamen gereksiz kaldı.
 
 ## 7. Hata yönetimi
 
 - API kotası dolarsa: o döngü atlanır, log'lanır, bir sonraki job'da devam edilir. Arayüzde veri "X saat önce güncellendi" notu ile gösterilir, sayfa kırılmaz.
 - Gemini analiz üretimi başarısız olursa (rate limit/hata): eski analiz (varsa) gösterilmeye devam eder, "analiz güncellenemedi" notu düşülür; job bir sonraki döngüde tekrar dener.
-- Küçük liglerde eksik istatistik/sakatlık verisi: analiz promptunda "bu veri mevcut değil" olarak işaretlenir, AI buna göre temkinli yorum üretir.
+- Sakatlık/form verisi artık arka planda çekilmiyor (bkz. §3); analiz promptunda bu veri hep "mevcut değil" olarak işaretlenir, AI buna göre temkinli yorum üretir.
+- "Araştır" butonu Gemini hatası/timeout alırsa: kullanıcıya "araştırma başarısız, tekrar deneyin" gösterilir, `match_research` kaydı oluşturulmaz, buton tekrar tıklanabilir kalır.
 
 ## 8. Erişim/güvenlik
 
@@ -104,9 +107,8 @@ Liste kod içinde yapılandırılabilir bir sabit olacak (yeni lig eklemek kolay
 |---|---|
 | Hosting (Vercel) | $0 |
 | Veritabanı (Supabase) | $0 |
-| Spor/istatistik verisi (API-Football) | $0 |
-| Oran verisi (The Odds API) | $0 |
-| AI analiz (Gemini 3.5 Flash-Lite) | $0 |
+| Fikstür + oran verisi (The Odds API) | $0 |
+| AI analiz + isteğe bağlı araştırma (Gemini 3.5 Flash-Lite + Search grounding) | $0 |
 | **Toplam** | **$0/ay** |
 
 Not: Ücretsiz kotalar aşılırsa (çok yoğun kullanım) ilk aşılacak muhtemelen The Odds API'nin aylık 500 istek limiti olur — bu durumda çekim sıklığı azaltılır ya da seçili lig sayısı kısıtlanır, ek ücret ödemeden yönetilebilir.
@@ -119,6 +121,7 @@ Not: Ücretsiz kotalar aşılırsa (çok yoğun kullanım) ilk aşılacak muhtem
 
 ## 11. Açık riskler
 
-- API-Football ücretsiz plan kapsamının bazı küçük liglerde (Norveç, İsveç, İsviçre, Hollanda alt seviye) yetersiz kalma ihtimali — implementasyon sırasında doğrulanacak.
 - Gemini ücretsiz kotasının kullanım verisini ürün geliştirme amacıyla kullanabilmesi — hassas olmayan spor verisi olduğu için düşük risk kabul edildi.
 - Referans oranların İddaa oranlarından farklı olması nedeniyle "value bet" yorumlarının yanıltıcı algılanma riski — arayüzde bu net şekilde uyarı olarak belirtilecek.
+- "Araştır" özelliğinin ürettiği sakatlık/form/H2H bilgisi resmi bir API'den değil, Gemini'nin serbest web aramasından geliyor — yanlış/eksik olabilir, kaynak linkleriyle birlikte "AI tarafından araştırıldı, doğrulayın" notuyla gösterilecek.
+- Odds API'nin takım isimlendirmesi bazen resmi kaynaklardan (örn. Transfermarkt, TFF) farklı olabilir — "Araştır" prompt'unun doğru takımı bulduğunu garanti etmez, sonuçta bu husus kontrol edilecek.
