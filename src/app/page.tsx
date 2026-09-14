@@ -4,6 +4,8 @@ import { getUpcomingMatchesWithLeague } from "@/lib/db/matches";
 import { LeagueMatchList } from "./league-match-list";
 import styles from "./page.module.css";
 
+export const dynamic = "force-dynamic";
+
 const HOME_WINDOW_DAYS = 14;
 const HOME_MATCH_LIMIT = 300;
 
