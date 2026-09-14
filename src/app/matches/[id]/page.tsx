@@ -2,58 +2,19 @@ import { notFound } from "next/navigation";
 import { getSupabaseClient } from "@/lib/supabase";
 import { getMatchById } from "@/lib/db/matches";
 import { getLeagueById } from "@/lib/db/leagues";
-import { getLatestTeamStats, type LatestTeamStats } from "@/lib/db/team-stats";
 import { getLatestOdds, getOddsHistory } from "@/lib/db/odds";
 import { getLatestAnalysis } from "@/lib/db/ai-analyses";
 import { getManualOddsForMatch } from "@/lib/db/manual-odds";
+import { getMatchResearch } from "@/lib/db/match-research";
 import { averagePricesByOutcome } from "@/lib/odds-chart";
 import { compareManualToReference } from "@/lib/odds-comparison";
 import { formatKickoffTime, formatRelativeUpdate } from "@/lib/format";
 import { OddsChartView } from "./odds-chart-view";
 import { ManualOddsForm } from "./manual-odds-form";
+import { ResearchButton } from "./research-button";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
-
-interface RecentMatchShape {
-  opponent?: string;
-  goalsFor?: number;
-  goalsAgainst?: number;
-  result?: string;
-}
-
-function renderTeamStats(label: string, stats: LatestTeamStats | undefined) {
-  if (!stats) {
-    return (
-      <div className={styles.teamStats}>
-        <h3>{label}</h3>
-        <p className={styles.noData}>Bu takim icin istatistik verisi mevcut degil.</p>
-      </div>
-    );
-  }
-
-  const lastMatches = stats.lastMatches as RecentMatchShape[];
-
-  return (
-    <div className={styles.teamStats}>
-      <h3>{label}</h3>
-      <p>Son form: {stats.form || "bilinmiyor"}</p>
-      <p>Sakatlik/cezali sayisi: {stats.injuries.length}</p>
-      <p>Kart cezasi: {stats.cards.length > 0 ? `${stats.cards.length} oyuncu cezali` : "veri toplanmiyor"}</p>
-      {lastMatches.length > 0 ? (
-        <ul className={styles.recentMatches}>
-          {lastMatches.map((m, i) => (
-            <li key={i}>
-              {m.opponent ?? "?"}: {m.goalsFor ?? "?"}-{m.goalsAgainst ?? "?"} ({m.result ?? "?"})
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className={styles.noData}>Son mac verisi mevcut degil.</p>
-      )}
-    </div>
-  );
-}
 
 export default async function MatchDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -64,21 +25,14 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
     notFound();
   }
 
-  const [league, teamStats, latestOdds, oddsHistory, analysis, manualOdds] = await Promise.all([
+  const [league, latestOdds, oddsHistory, analysis, manualOdds, research] = await Promise.all([
     getLeagueById(supabase, match.leagueId),
-    getLatestTeamStats(supabase, match.id),
     getLatestOdds(supabase, match.id),
     getOddsHistory(supabase, match.id),
     getLatestAnalysis(supabase, match.id),
     getManualOddsForMatch(supabase, match.id),
+    getMatchResearch(supabase, match.id),
   ]);
-
-  const homeStats = teamStats.find((s) => s.team === "home");
-  const awayStats = teamStats.find((s) => s.team === "away");
-
-  const statsFetchedAt = [homeStats?.fetchedAt, awayStats?.fetchedAt]
-    .filter((v): v is string => Boolean(v))
-    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
 
   const manualComparisons =
     manualOdds.length > 0
@@ -97,12 +51,31 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
       <p className={styles.kickoff}>{formatKickoffTime(match.kickoffAt)}</p>
 
       <section className={styles.section}>
-        <h2>Takim Durumu</h2>
-        {statsFetchedAt && <p className={styles.updatedAt}>{formatRelativeUpdate(statsFetchedAt)}</p>}
-        <div className={styles.statsGrid}>
-          {renderTeamStats(match.homeTeam, homeStats)}
-          {renderTeamStats(match.awayTeam, awayStats)}
-        </div>
+        <h2>Sakatlik / Form / H2H Arastirmasi</h2>
+        {research ? (
+          <>
+            <p className={styles.updatedAt}>{formatRelativeUpdate(research.generatedAt)}</p>
+            <p className={styles.researchContent}>{research.content}</p>
+            {research.sources.length > 0 && (
+              <ul className={styles.sourcesList}>
+                {research.sources.map((s, i) => (
+                  <li key={i}>
+                    <a href={s.url} target="_blank" rel="noopener noreferrer">
+                      {s.title || s.url}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        ) : (
+          <>
+            <p className={styles.noData}>
+              Bu mac icin henuz arastirma yapilmadi. AI tarafindan web'de arastirilir, sonucu dogrulayin.
+            </p>
+            <ResearchButton matchId={match.id} />
+          </>
+        )}
       </section>
 
       <section className={styles.section}>

@@ -32,32 +32,19 @@
   gap: 8px;
 }
 
-.statsGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-@media (max-width: 480px) {
-  .statsGrid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.teamStats {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.researchContent {
+  white-space: pre-wrap;
   font-size: 14px;
+  line-height: 1.5;
 }
 
-.recentMatches {
+.sourcesList {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  font-size: 13px;
-  opacity: 0.85;
+  gap: 4px;
+  font-size: 12px;
+  opacity: 0.8;
 }
 
 .oddsList {
