@@ -1,0 +1,52 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 320px;
+}
+
+.disclaimer {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.input {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  background: transparent;
+  color: inherit;
+  font-size: 14px;
+}
+
+.error {
+  color: #dc2626;
+  font-size: 13px;
+}
+
+.success {
+  color: #16a34a;
+  font-size: 13px;
+}
+
+.submit {
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+  background: var(--foreground);
+  color: var(--background);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

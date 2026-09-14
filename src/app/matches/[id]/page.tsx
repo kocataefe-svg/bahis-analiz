@@ -6,8 +6,12 @@ import { getLatestTeamStats, type LatestTeamStats } from "@/lib/db/team-stats";
 import { getLatestOdds } from "@/lib/db/odds";
 import { getOddsHistory } from "@/lib/db/odds";
 import { getLatestAnalysis } from "@/lib/db/ai-analyses";
+import { getManualOddsForMatch } from "@/lib/db/manual-odds";
+import { averagePricesByOutcome } from "@/lib/odds-chart";
+import { compareManualToReference } from "@/lib/odds-comparison";
 import { formatKickoffTime } from "@/lib/format";
 import { OddsChartView } from "./odds-chart-view";
+import { ManualOddsForm } from "./manual-odds-form";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -61,12 +65,13 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
     notFound();
   }
 
-  const [league, teamStats, latestOdds, oddsHistory, analysis] = await Promise.all([
+  const [league, teamStats, latestOdds, oddsHistory, analysis, manualOdds] = await Promise.all([
     getLeagueById(supabase, match.leagueId),
     getLatestTeamStats(supabase, match.id),
     getLatestOdds(supabase, match.id),
     getOddsHistory(supabase, match.id),
     getLatestAnalysis(supabase, match.id),
+    getManualOddsForMatch(supabase, match.id),
   ]);
 
   const homeStats = teamStats.find((s) => s.team === "home");
@@ -126,6 +131,25 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
             </div>
           </div>
         )}
+      </section>
+
+      <section className={styles.section}>
+        <h2>Manuel Oran Karsilastirma</h2>
+        {manualOdds.length > 0 && (
+          <ul className={styles.oddsList}>
+            {compareManualToReference(
+              manualOdds.map((m) => ({ outcome: m.outcome, price: m.price })),
+              averagePricesByOutcome(latestOdds),
+            ).map((c) => (
+              <li key={c.outcome}>
+                {c.outcome}: siz {c.manualPrice}, referans {c.referencePrice.toFixed(2)} (fark{" "}
+                {c.diffPercent > 0 ? "+" : ""}
+                {c.diffPercent.toFixed(1)}%)
+              </li>
+            ))}
+          </ul>
+        )}
+        <ManualOddsForm matchId={match.id} homeTeam={match.homeTeam} awayTeam={match.awayTeam} />
       </section>
     </main>
   );
