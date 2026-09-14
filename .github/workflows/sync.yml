@@ -2,37 +2,16 @@ name: Veri Senkronizasyonu
 
 on:
   schedule:
-    - cron: "0 6 * * *"
-    - cron: "0 18 * * *"
-    - cron: "30 6 * * *"
     - cron: "0 8 * * *"
     - cron: "0 9 * * *"
   workflow_dispatch: {}
 
 jobs:
-  sync-matches:
-    if: github.event.schedule == '0 6 * * *' || github.event.schedule == '0 18 * * *' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger mac senkronizasyonu
-        run: |
-          curl -sf -X POST "${{ secrets.APP_BASE_URL }}/api/sync/matches" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
-
-  sync-stats:
-    if: github.event.schedule == '30 6 * * *' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger takim istatistik senkronizasyonu
-        run: |
-          curl -sf -X POST "${{ secrets.APP_BASE_URL }}/api/sync/stats" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
-
   sync-odds:
     if: github.event.schedule == '0 8 * * *' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger oran senkronizasyonu
+      - name: Trigger mac + oran senkronizasyonu
         run: |
           curl -sf -X POST "${{ secrets.APP_BASE_URL }}/api/sync/odds" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
