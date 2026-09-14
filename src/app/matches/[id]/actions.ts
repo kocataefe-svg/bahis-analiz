@@ -9,10 +9,6 @@ export interface ManualOddsFormState {
   success: boolean;
 }
 
-const INITIAL_MANUAL_ODDS_STATE: ManualOddsFormState = { error: null, success: false };
-
-export { INITIAL_MANUAL_ODDS_STATE };
-
 export async function submitManualOdds(
   matchId: string,
   homeOutcome: string,
@@ -47,14 +43,18 @@ export async function submitManualOdds(
   }
 
   const supabase = getSupabaseClient();
-  for (const entry of entries) {
-    await insertManualOdds(supabase, {
-      match_id: matchId,
-      entered_by: enteredBy,
-      market: "h2h",
-      outcome: entry.outcome,
-      price: entry.price,
-    });
+  try {
+    for (const entry of entries) {
+      await insertManualOdds(supabase, {
+        match_id: matchId,
+        entered_by: enteredBy,
+        market: "h2h",
+        outcome: entry.outcome,
+        price: entry.price,
+      });
+    }
+  } catch {
+    return { error: "Kaydedilemedi, tekrar deneyin.", success: false };
   }
 
   revalidatePath("/matches/[id]", "page");

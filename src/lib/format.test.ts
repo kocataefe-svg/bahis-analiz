@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatKickoffTime } from "./format";
+import { formatKickoffTime, formatRelativeUpdate } from "./format";
 
 describe("formatKickoffTime", () => {
   it("formats an ISO timestamp as a Turkish-localized date/time string", () => {
@@ -9,5 +9,17 @@ describe("formatKickoffTime", () => {
     expect(result).toContain("2026");
     expect(typeof result).toBe("string");
     expect(result.length).toBeGreaterThan(0);
+  });
+});
+
+describe("formatRelativeUpdate", () => {
+  it("formats a timestamp from 3 hours ago in hours", () => {
+    const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+    expect(formatRelativeUpdate(threeHoursAgo)).toContain("3 saat");
+  });
+
+  it("formats a timestamp from 2 days ago in days", () => {
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+    expect(formatRelativeUpdate(twoDaysAgo)).toContain("gun");
   });
 });

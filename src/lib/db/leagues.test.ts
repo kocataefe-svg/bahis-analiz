@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { getActiveLeagues } from "./leagues";
+import { getActiveLeagues, getActiveLeaguesForDisplay, getLeagueById } from "./leagues";
 
 function createSupabaseMock(result: { data: unknown; error: unknown }) {
   const eq = vi.fn().mockResolvedValue(result);
@@ -33,8 +33,6 @@ describe("getActiveLeagues", () => {
     await expect(getActiveLeagues(supabase)).rejects.toThrow("boom");
   });
 });
-
-import { getActiveLeaguesForDisplay, getLeagueById } from "./leagues";
 
 describe("getActiveLeaguesForDisplay", () => {
   it("returns id/name/country for active leagues, ordered by name", async () => {

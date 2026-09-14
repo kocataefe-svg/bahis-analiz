@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { upsertMatches, getUpcomingMatches } from "./matches";
+import { upsertMatches, getUpcomingMatches, getUpcomingMatchesWithLeague, getMatchById } from "./matches";
 
 describe("upsertMatches", () => {
   it("does nothing when rows is empty", async () => {
@@ -86,8 +86,6 @@ describe("getUpcomingMatches", () => {
     ]);
   });
 });
-
-import { getUpcomingMatchesWithLeague, getMatchById } from "./matches";
 
 describe("getUpcomingMatchesWithLeague", () => {
   it("returns display-shaped matches within the window", async () => {
