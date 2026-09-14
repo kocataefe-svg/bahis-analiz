@@ -5,10 +5,20 @@ import { getSupabaseClient } from "../src/lib/supabase-core";
 import { searchLeague } from "../src/lib/api-football";
 import { LEAGUE_CATALOG } from "../src/lib/league-catalog";
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// API-Football'un ucretsiz plani dakikada ~10 istekle sinirli. Aralarina
+// bekleme koymadan art arda 14 lig aranirsa 10'dan sonrakiler 429 aliyor.
+const REQUEST_DELAY_MS = 7000;
+
 async function main() {
   const supabase = getSupabaseClient();
 
-  for (const entry of LEAGUE_CATALOG) {
+  for (const [index, entry] of LEAGUE_CATALOG.entries()) {
+    if (index > 0) await sleep(REQUEST_DELAY_MS);
+
     const found = await searchLeague(entry.apiFootballSearchName, entry.apiFootballSearchCountry);
 
     if (!found) {
