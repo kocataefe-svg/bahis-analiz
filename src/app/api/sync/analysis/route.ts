@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseClient } from "@/lib/supabase";
 import { getUpcomingMatches } from "@/lib/db/matches";
-import { getLatestTeamStats } from "@/lib/db/team-stats";
 import { getLatestOdds } from "@/lib/db/odds";
 import { getLatestAnalysisGeneratedAt, needsFreshAnalysis, insertAiAnalysis } from "@/lib/db/ai-analyses";
 import { generateMatchAnalysis, GEMINI_MODEL } from "@/lib/gemini";
@@ -26,22 +25,12 @@ export async function POST(request: NextRequest) {
 
   for (const match of matches) {
     try {
-      const [teamStats, odds, latestAnalysisAt] = await Promise.all([
-        getLatestTeamStats(supabase, match.id),
+      const [odds, latestAnalysisAt] = await Promise.all([
         getLatestOdds(supabase, match.id),
         getLatestAnalysisGeneratedAt(supabase, match.id),
       ]);
 
-      const homeStats = teamStats.find((s) => s.team === "home") ?? null;
-      const awayStats = teamStats.find((s) => s.team === "away") ?? null;
-
-      const dataTimestamps = [homeStats?.fetchedAt, awayStats?.fetchedAt, odds[0]?.fetchedAt].filter(
-        (v): v is string => Boolean(v),
-      );
-      const latestDataFetchedAt =
-        dataTimestamps.length > 0
-          ? dataTimestamps.reduce((a, b) => (new Date(a) > new Date(b) ? a : b))
-          : null;
+      const latestDataFetchedAt = odds[0]?.fetchedAt ?? null;
 
       if (!needsFreshAnalysis(latestAnalysisAt, latestDataFetchedAt)) {
         skipped += 1;
@@ -52,12 +41,8 @@ export async function POST(request: NextRequest) {
         homeTeam: match.homeTeam,
         awayTeam: match.awayTeam,
         kickoffAt: match.kickoffAt,
-        homeStats: homeStats
-          ? { form: homeStats.form, injuries: homeStats.injuries, cards: homeStats.cards, lastMatches: homeStats.lastMatches }
-          : null,
-        awayStats: awayStats
-          ? { form: awayStats.form, injuries: awayStats.injuries, cards: awayStats.cards, lastMatches: awayStats.lastMatches }
-          : null,
+        homeStats: null,
+        awayStats: null,
         odds: odds.map((o) => ({ bookmaker: o.bookmaker, outcome: o.outcome, price: o.price })),
       });
 

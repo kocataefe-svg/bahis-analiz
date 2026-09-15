@@ -2,13 +2,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("@/lib/supabase", () => ({ getSupabaseClient: vi.fn(() => ({})) }));
 vi.mock("@/lib/db/leagues", () => ({ getActiveLeagues: vi.fn() }));
-vi.mock("@/lib/db/matches", () => ({ getUpcomingMatches: vi.fn() }));
+vi.mock("@/lib/db/matches", () => ({ upsertMatches: vi.fn() }));
 vi.mock("@/lib/db/odds", () => ({ insertOddsSnapshots: vi.fn() }));
 vi.mock("@/lib/odds-api", () => ({ getOddsForSport: vi.fn() }));
 
 import { POST } from "./route";
 import { getActiveLeagues } from "@/lib/db/leagues";
-import { getUpcomingMatches } from "@/lib/db/matches";
+import { upsertMatches } from "@/lib/db/matches";
 import { insertOddsSnapshots } from "@/lib/db/odds";
 import { getOddsForSport } from "@/lib/odds-api";
 
@@ -21,7 +21,7 @@ function makeRequest(authHeader?: string): Request {
 beforeEach(() => {
   vi.stubEnv("CRON_SECRET", "test-secret");
   vi.mocked(getActiveLeagues).mockReset();
-  vi.mocked(getUpcomingMatches).mockReset();
+  vi.mocked(upsertMatches).mockReset();
   vi.mocked(insertOddsSnapshots).mockReset().mockResolvedValue(undefined);
   vi.mocked(getOddsForSport).mockReset();
 });
@@ -36,24 +36,14 @@ describe("POST /api/sync/odds", () => {
     expect(res.status).toBe(401);
   });
 
-  it("matches odds events to known matches by normalized team names and inserts them", async () => {
+  it("upserts the match from the odds event and inserts odds keyed by the returned match id", async () => {
     vi.mocked(getActiveLeagues).mockResolvedValue([
-      { id: "l1", apiFootballId: 39, currentSeason: 2026, oddsApiSportKey: "soccer_epl" },
-      { id: "l2", apiFootballId: 204, currentSeason: null, oddsApiSportKey: null },
-    ]);
-    vi.mocked(getUpcomingMatches).mockResolvedValue([
-      {
-        id: "m1",
-        apiFixtureId: 1001,
-        homeTeam: "Manchester City",
-        awayTeam: "Arsenal",
-        homeTeamApiId: 50,
-        awayTeamApiId: 42,
-        kickoffAt: "2026-09-20T15:00:00Z",
-      },
+      { id: "l1", oddsApiSportKey: "soccer_epl" },
+      { id: "l2", oddsApiSportKey: null },
     ]);
     vi.mocked(getOddsForSport).mockResolvedValue([
       {
+        eventId: "evt1",
         homeTeam: "Manchester City",
         awayTeam: "Arsenal",
         commenceTime: "2026-09-20T15:00:00Z",
@@ -63,15 +53,17 @@ describe("POST /api/sync/odds", () => {
         price: 4.2,
       },
       {
-        homeTeam: "Unknown Team A",
-        awayTeam: "Unknown Team B",
-        commenceTime: "2026-09-21T15:00:00Z",
+        eventId: "evt1",
+        homeTeam: "Manchester City",
+        awayTeam: "Arsenal",
+        commenceTime: "2026-09-20T15:00:00Z",
         bookmaker: "pinnacle",
         market: "h2h",
-        outcome: "Unknown Team A",
-        price: 2.0,
+        outcome: "Manchester City",
+        price: 1.8,
       },
     ]);
+    vi.mocked(upsertMatches).mockResolvedValue([{ id: "m1", oddsApiEventId: "evt1" }]);
 
     const res = await POST(makeRequest("Bearer test-secret") as any);
     const body = await res.json();
@@ -79,78 +71,41 @@ describe("POST /api/sync/odds", () => {
     expect(res.status).toBe(200);
     expect(getOddsForSport).toHaveBeenCalledTimes(1);
     expect(getOddsForSport).toHaveBeenCalledWith("soccer_epl");
+    expect(upsertMatches).toHaveBeenCalledWith(expect.anything(), [
+      {
+        league_id: "l1",
+        odds_api_event_id: "evt1",
+        home_team: "Manchester City",
+        away_team: "Arsenal",
+        kickoff_at: "2026-09-20T15:00:00Z",
+      },
+    ]);
     expect(insertOddsSnapshots).toHaveBeenCalledWith(expect.anything(), [
       { match_id: "m1", market: "h2h", outcome: "Arsenal", bookmaker: "pinnacle", price: 4.2 },
+      { match_id: "m1", market: "h2h", outcome: "Manchester City", bookmaker: "pinnacle", price: 1.8 },
     ]);
-    expect(body.totalInserted).toBe(1);
-    expect(body.totalUnmatched).toBe(1);
+    expect(body).toEqual({ ok: true, totalMatchesUpserted: 1, totalOddsInserted: 2, failed: 0 });
   });
 
-  it("only matches a quote to a match within 12 hours of its commence time", async () => {
-    vi.mocked(getActiveLeagues).mockResolvedValue([
-      { id: "l1", apiFootballId: 39, currentSeason: 2026, oddsApiSportKey: "soccer_epl" },
-    ]);
-    vi.mocked(getUpcomingMatches).mockResolvedValue([
-      {
-        id: "m1",
-        apiFixtureId: 1001,
-        homeTeam: "Manchester City",
-        awayTeam: "Arsenal",
-        homeTeamApiId: 50,
-        awayTeamApiId: 42,
-        kickoffAt: "2026-09-20T15:00:00Z",
-      },
-      {
-        id: "m2",
-        apiFixtureId: 1002,
-        homeTeam: "Manchester City",
-        awayTeam: "Arsenal",
-        homeTeamApiId: 50,
-        awayTeamApiId: 42,
-        kickoffAt: "2026-10-05T15:00:00Z",
-      },
-    ]);
-    vi.mocked(getOddsForSport).mockResolvedValue([
-      {
-        homeTeam: "Manchester City",
-        awayTeam: "Arsenal",
-        commenceTime: "2026-10-05T18:00:00Z",
-        bookmaker: "pinnacle",
-        market: "h2h",
-        outcome: "Arsenal",
-        price: 4.2,
-      },
-    ]);
+  it("skips a league when getOddsForSport returns no quotes", async () => {
+    vi.mocked(getActiveLeagues).mockResolvedValue([{ id: "l1", oddsApiSportKey: "soccer_epl" }]);
+    vi.mocked(getOddsForSport).mockResolvedValue([]);
 
     const res = await POST(makeRequest("Bearer test-secret") as any);
     const body = await res.json();
 
-    expect(res.status).toBe(200);
-    expect(insertOddsSnapshots).toHaveBeenCalledWith(expect.anything(), [
-      { match_id: "m2", market: "h2h", outcome: "Arsenal", bookmaker: "pinnacle", price: 4.2 },
-    ]);
-    expect(body.totalInserted).toBe(1);
-    expect(body.totalUnmatched).toBe(0);
+    expect(upsertMatches).not.toHaveBeenCalled();
+    expect(body).toEqual({ ok: true, totalMatchesUpserted: 0, totalOddsInserted: 0, failed: 0 });
   });
 
-  it("continues to the next league and reports a failure count when insertOddsSnapshots throws for one league", async () => {
+  it("continues to the next league and reports a failure count when upsertMatches throws for one league", async () => {
     vi.mocked(getActiveLeagues).mockResolvedValue([
-      { id: "l1", apiFootballId: 39, currentSeason: 2026, oddsApiSportKey: "soccer_epl" },
-      { id: "l2", apiFootballId: 61, currentSeason: 2026, oddsApiSportKey: "soccer_france_ligue_one" },
-    ]);
-    vi.mocked(getUpcomingMatches).mockResolvedValue([
-      {
-        id: "m1",
-        apiFixtureId: 1001,
-        homeTeam: "Manchester City",
-        awayTeam: "Arsenal",
-        homeTeamApiId: 50,
-        awayTeamApiId: 42,
-        kickoffAt: "2026-09-20T15:00:00Z",
-      },
+      { id: "l1", oddsApiSportKey: "soccer_epl" },
+      { id: "l2", oddsApiSportKey: "soccer_france_ligue_one" },
     ]);
     vi.mocked(getOddsForSport).mockResolvedValue([
       {
+        eventId: "evt1",
         homeTeam: "Manchester City",
         awayTeam: "Arsenal",
         commenceTime: "2026-09-20T15:00:00Z",
@@ -160,14 +115,15 @@ describe("POST /api/sync/odds", () => {
         price: 4.2,
       },
     ]);
-    vi.mocked(insertOddsSnapshots).mockReset().mockRejectedValueOnce(new Error("db down")).mockResolvedValueOnce(undefined);
+    vi.mocked(upsertMatches)
+      .mockRejectedValueOnce(new Error("db down"))
+      .mockResolvedValueOnce([{ id: "m1", oddsApiEventId: "evt1" }]);
 
     const res = await POST(makeRequest("Bearer test-secret") as any);
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(insertOddsSnapshots).toHaveBeenCalledTimes(2);
-    expect(body.totalInserted).toBe(1);
-    expect(body.failed).toBe(1);
+    expect(upsertMatches).toHaveBeenCalledTimes(2);
+    expect(body).toEqual({ ok: true, totalMatchesUpserted: 1, totalOddsInserted: 1, failed: 1 });
   });
 });

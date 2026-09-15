@@ -1,6 +1,7 @@
 const ODDS_API_BASE_URL = "https://api.the-odds-api.com/v4";
 
 export interface OddsQuote {
+  eventId: string;
   homeTeam: string;
   awayTeam: string;
   commenceTime: string;
@@ -26,6 +27,7 @@ interface RawOddsBookmaker {
 }
 
 interface RawOddsEvent {
+  id: string;
   home_team: string;
   away_team: string;
   commence_time: string;
@@ -66,6 +68,7 @@ export async function getOddsForSport(sportKey: string): Promise<OddsQuote[]> {
       for (const market of bookmaker.markets ?? []) {
         for (const outcome of market.outcomes ?? []) {
           quotes.push({
+            eventId: event.id,
             homeTeam: event.home_team,
             awayTeam: event.away_team,
             commenceTime: event.commence_time,

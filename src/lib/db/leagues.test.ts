@@ -12,8 +12,8 @@ describe("getActiveLeagues", () => {
   it("maps rows to camelCase and filters by active=true", async () => {
     const supabase = createSupabaseMock({
       data: [
-        { id: "l1", api_football_id: 39, current_season: 2026, odds_api_sport_key: "soccer_epl" },
-        { id: "l2", api_football_id: 204, current_season: null, odds_api_sport_key: null },
+        { id: "l1", odds_api_sport_key: "soccer_epl" },
+        { id: "l2", odds_api_sport_key: null },
       ],
       error: null,
     });
@@ -23,8 +23,8 @@ describe("getActiveLeagues", () => {
     expect(supabase.from).toHaveBeenCalledWith("leagues");
     expect(supabase.eq).toHaveBeenCalledWith("active", true);
     expect(result).toEqual([
-      { id: "l1", apiFootballId: 39, currentSeason: 2026, oddsApiSportKey: "soccer_epl" },
-      { id: "l2", apiFootballId: 204, currentSeason: null, oddsApiSportKey: null },
+      { id: "l1", oddsApiSportKey: "soccer_epl" },
+      { id: "l2", oddsApiSportKey: null },
     ]);
   });
 

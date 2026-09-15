@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("@/lib/supabase", () => ({ getSupabaseClient: vi.fn(() => ({})) }));
 vi.mock("@/lib/db/matches", () => ({ getUpcomingMatches: vi.fn() }));
-vi.mock("@/lib/db/team-stats", () => ({ getLatestTeamStats: vi.fn() }));
 vi.mock("@/lib/db/odds", () => ({ getLatestOdds: vi.fn() }));
 vi.mock("@/lib/db/ai-analyses", () => ({
   getLatestAnalysisGeneratedAt: vi.fn(),
@@ -13,7 +12,6 @@ vi.mock("@/lib/gemini", () => ({ generateMatchAnalysis: vi.fn(), GEMINI_MODEL: "
 
 import { POST } from "./route";
 import { getUpcomingMatches } from "@/lib/db/matches";
-import { getLatestTeamStats } from "@/lib/db/team-stats";
 import { getLatestOdds } from "@/lib/db/odds";
 import { getLatestAnalysisGeneratedAt, needsFreshAnalysis, insertAiAnalysis } from "@/lib/db/ai-analyses";
 import { generateMatchAnalysis } from "@/lib/gemini";
@@ -26,18 +24,14 @@ function makeRequest(authHeader?: string): Request {
 
 const match = {
   id: "m1",
-  apiFixtureId: 1001,
   homeTeam: "Arsenal",
   awayTeam: "Chelsea",
-  homeTeamApiId: 1,
-  awayTeamApiId: 2,
   kickoffAt: "2026-09-20T15:00:00Z",
 };
 
 beforeEach(() => {
   vi.stubEnv("CRON_SECRET", "test-secret");
   vi.mocked(getUpcomingMatches).mockReset();
-  vi.mocked(getLatestTeamStats).mockReset().mockResolvedValue([]);
   vi.mocked(getLatestOdds).mockReset().mockResolvedValue([]);
   vi.mocked(getLatestAnalysisGeneratedAt).mockReset().mockResolvedValue(null);
   vi.mocked(needsFreshAnalysis).mockReset().mockReturnValue(true);
@@ -70,7 +64,7 @@ describe("POST /api/sync/analysis", () => {
     expect(getUpcomingMatches).toHaveBeenCalledWith(expect.anything(), 3, 15);
     expect(needsFreshAnalysis).toHaveBeenCalledWith(null, null);
     expect(generateMatchAnalysis).toHaveBeenCalledWith(
-      expect.objectContaining({ homeTeam: "Arsenal", awayTeam: "Chelsea" }),
+      expect.objectContaining({ homeTeam: "Arsenal", awayTeam: "Chelsea", homeStats: null, awayStats: null }),
     );
     expect(insertAiAnalysis).toHaveBeenCalledWith(
       expect.anything(),
@@ -116,7 +110,7 @@ describe("POST /api/sync/analysis", () => {
 
   it("continues to the next match and counts a failure when a DB call throws", async () => {
     vi.mocked(getUpcomingMatches).mockResolvedValue([match, { ...match, id: "m2" }]);
-    vi.mocked(getLatestTeamStats).mockRejectedValueOnce(new Error("db down")).mockResolvedValueOnce([]);
+    vi.mocked(getLatestOdds).mockRejectedValueOnce(new Error("db down")).mockResolvedValueOnce([]);
 
     const res = await POST(makeRequest("Bearer test-secret") as any);
     const body = await res.json();
@@ -124,9 +118,8 @@ describe("POST /api/sync/analysis", () => {
     expect(body).toEqual({ ok: true, generated: 1, skipped: 0, failed: 1 });
   });
 
-  it("passes missing stats/odds through as null/empty so the prompt marks them as unavailable", async () => {
+  it("passes missing odds through as empty so the prompt marks them as unavailable", async () => {
     vi.mocked(getUpcomingMatches).mockResolvedValue([match]);
-    vi.mocked(getLatestTeamStats).mockResolvedValue([]);
     vi.mocked(getLatestOdds).mockResolvedValue([]);
 
     await POST(makeRequest("Bearer test-secret") as any);
