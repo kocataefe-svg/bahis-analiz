@@ -7,7 +7,7 @@ import { getMatchResearch, insertMatchResearch } from "@/lib/db/match-research";
 import { getLatestOdds } from "@/lib/db/odds";
 import { insertAiAnalysis } from "@/lib/db/ai-analyses";
 import { researchMatchContext, RESEARCH_MODEL } from "@/lib/gemini-research";
-import { generateMatchAnalysis, GEMINI_MODEL } from "@/lib/gemini";
+import { generateMatchAnalysis, GROQ_MODEL } from "@/lib/groq";
 
 export interface ResearchMatchState {
   error: string | null;
@@ -79,7 +79,7 @@ async function regenerateAnalysisWithResearch(
       betting_analyst_text: analysis.bettingAnalystText,
       commentator_text: analysis.commentatorText,
       summary_text: analysis.summaryText,
-      model_used: GEMINI_MODEL,
+      model_used: GROQ_MODEL,
     });
   } catch (err) {
     console.warn(`Arastirma sonrasi analiz yenileme basarisiz: match=${match.id} ->`, err);

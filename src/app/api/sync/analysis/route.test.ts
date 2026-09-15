@@ -9,14 +9,14 @@ vi.mock("@/lib/db/ai-analyses", () => ({
   needsFreshAnalysis: vi.fn(),
   insertAiAnalysis: vi.fn(),
 }));
-vi.mock("@/lib/gemini", () => ({ generateMatchAnalysis: vi.fn(), GEMINI_MODEL: "gemini-3.5-flash-lite" }));
+vi.mock("@/lib/groq", () => ({ generateMatchAnalysis: vi.fn(), GROQ_MODEL: "openai/gpt-oss-20b" }));
 
 import { POST } from "./route";
 import { getUpcomingMatches } from "@/lib/db/matches";
 import { getLatestOdds } from "@/lib/db/odds";
 import { getMatchResearch } from "@/lib/db/match-research";
 import { getLatestAnalysisGeneratedAt, needsFreshAnalysis, insertAiAnalysis } from "@/lib/db/ai-analyses";
-import { generateMatchAnalysis } from "@/lib/gemini";
+import { generateMatchAnalysis } from "@/lib/groq";
 
 function makeRequest(authHeader?: string): Request {
   const headers = new Headers();
@@ -77,7 +77,7 @@ describe("POST /api/sync/analysis", () => {
         betting_analyst_text: "b",
         commentator_text: "c",
         summary_text: "d",
-        model_used: "gemini-3.5-flash-lite",
+        model_used: "openai/gpt-oss-20b",
       }),
     );
     expect(body).toEqual({ ok: true, generated: 1, skipped: 0, failed: 0 });

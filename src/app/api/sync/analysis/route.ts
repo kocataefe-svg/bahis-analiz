@@ -4,7 +4,7 @@ import { getUpcomingMatches } from "@/lib/db/matches";
 import { getLatestOdds } from "@/lib/db/odds";
 import { getMatchResearch } from "@/lib/db/match-research";
 import { getLatestAnalysisGeneratedAt, needsFreshAnalysis, insertAiAnalysis } from "@/lib/db/ai-analyses";
-import { generateMatchAnalysis, GEMINI_MODEL } from "@/lib/gemini";
+import { generateMatchAnalysis, GROQ_MODEL } from "@/lib/groq";
 import { isSyncRequestAuthorized } from "@/lib/sync-auth";
 
 export const maxDuration = 60;
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
         betting_analyst_text: result.bettingAnalystText,
         commentator_text: result.commentatorText,
         summary_text: result.summaryText,
-        model_used: GEMINI_MODEL,
+        model_used: GROQ_MODEL,
       });
 
       generated += 1;
