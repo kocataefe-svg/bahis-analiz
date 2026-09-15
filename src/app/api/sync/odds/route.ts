@@ -6,6 +6,7 @@ import { insertOddsSnapshots } from "@/lib/db/odds";
 import { getOddsForSport } from "@/lib/odds-api";
 import { isSyncRequestAuthorized } from "@/lib/sync-auth";
 import { limitBookmakersPerMarket } from "@/lib/display-bookmakers";
+import { MARKET_LABELS } from "@/lib/market-labels";
 
 export async function POST(request: NextRequest) {
   if (!isSyncRequestAuthorized(request)) {
@@ -42,9 +43,12 @@ export async function POST(request: NextRequest) {
 
       const matchIdByEventId = new Map(upserted.map((m) => [m.oddsApiEventId, m.id]));
       // Fikstur olusturma TUM quotes'u kullanir (hangi bookmaker'da olursa
-      // olsun bir mac varsa eklenmeli); oran kaydinda ise her maca ozel
-      // pazar bazinda en fazla iki siteye indirgenir.
-      const oddsRows = limitBookmakersPerMarket(quotes)
+      // olsun bir mac varsa eklenmeli). Oran kaydinda ise: sadece bilinen
+      // pazarlar (h2h - bazi borsa bookmaker'lari "h2h" istesek bile ekstra
+      // h2h_lay gibi anahtarlar dondurebiliyor) tutulur ve her maca ozel
+      // pazar basina en fazla iki siteye indirgenir.
+      const knownMarketQuotes = quotes.filter((q) => q.market in MARKET_LABELS);
+      const oddsRows = limitBookmakersPerMarket(knownMarketQuotes)
         .map((quote) => {
           const matchId = matchIdByEventId.get(quote.eventId);
           if (!matchId) return null;
