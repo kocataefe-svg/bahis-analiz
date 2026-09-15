@@ -1,10 +1,3 @@
-export interface TeamStatsForPrompt {
-  form: string | null;
-  injuries: unknown[];
-  cards: unknown[];
-  lastMatches: unknown[];
-}
-
 export interface OddsForPrompt {
   bookmaker: string;
   outcome: string;
@@ -15,22 +8,15 @@ export interface AnalysisPromptInput {
   homeTeam: string;
   awayTeam: string;
   kickoffAt: string;
-  homeStats: TeamStatsForPrompt | null;
-  awayStats: TeamStatsForPrompt | null;
+  researchContext: string | null;
   odds: OddsForPrompt[];
 }
 
-function formatTeamStats(label: string, stats: TeamStatsForPrompt | null): string {
-  if (!stats) {
-    return `${label}: Bu takim icin istatistik verisi mevcut degil. Bu durumu belirt ve temkinli yorum yap.`;
+function formatResearchContext(researchContext: string | null): string {
+  if (!researchContext) {
+    return "Sakatlik/form/H2H arastirmasi mevcut degil (henuz 'Arastir' butonuyla tetiklenmemis). Bu durumu belirt ve temkinli yorum yap.";
   }
-  return [
-    `${label}:`,
-    `- Son form: ${stats.form || "bilinmiyor"}`,
-    `- Sakatlik/cezali sayisi: ${stats.injuries.length}`,
-    `- Kart cezasi: ${stats.cards.length > 0 ? `${stats.cards.length} oyuncu cezali` : "veri toplanmiyor (henuz bu bilgi kaynagi yok)"}`,
-    `- Son maclar: ${JSON.stringify(stats.lastMatches)}`,
-  ].join("\n");
+  return ["Sakatlik/form/H2H arastirmasi (web arama ile toplanmis):", researchContext].join("\n");
 }
 
 function formatOdds(odds: OddsForPrompt[]): string {
@@ -53,9 +39,7 @@ export function buildAnalysisPrompt(input: AnalysisPromptInput): string {
     "",
     `Mac: ${input.homeTeam} - ${input.awayTeam}, ${input.kickoffAt}`,
     "",
-    formatTeamStats(`Ev sahibi (${input.homeTeam})`, input.homeStats),
-    "",
-    formatTeamStats(`Deplasman (${input.awayTeam})`, input.awayStats),
+    formatResearchContext(input.researchContext),
     "",
     formatOdds(input.odds),
     "",

@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 vi.mock("@/lib/supabase", () => ({ getSupabaseClient: vi.fn(() => ({})) }));
 vi.mock("@/lib/db/matches", () => ({ getUpcomingMatches: vi.fn() }));
 vi.mock("@/lib/db/odds", () => ({ getLatestOdds: vi.fn() }));
+vi.mock("@/lib/db/match-research", () => ({ getMatchResearch: vi.fn() }));
 vi.mock("@/lib/db/ai-analyses", () => ({
   getLatestAnalysisGeneratedAt: vi.fn(),
   needsFreshAnalysis: vi.fn(),
@@ -13,6 +14,7 @@ vi.mock("@/lib/gemini", () => ({ generateMatchAnalysis: vi.fn(), GEMINI_MODEL: "
 import { POST } from "./route";
 import { getUpcomingMatches } from "@/lib/db/matches";
 import { getLatestOdds } from "@/lib/db/odds";
+import { getMatchResearch } from "@/lib/db/match-research";
 import { getLatestAnalysisGeneratedAt, needsFreshAnalysis, insertAiAnalysis } from "@/lib/db/ai-analyses";
 import { generateMatchAnalysis } from "@/lib/gemini";
 
@@ -33,6 +35,7 @@ beforeEach(() => {
   vi.stubEnv("CRON_SECRET", "test-secret");
   vi.mocked(getUpcomingMatches).mockReset();
   vi.mocked(getLatestOdds).mockReset().mockResolvedValue([]);
+  vi.mocked(getMatchResearch).mockReset().mockResolvedValue(null);
   vi.mocked(getLatestAnalysisGeneratedAt).mockReset().mockResolvedValue(null);
   vi.mocked(needsFreshAnalysis).mockReset().mockReturnValue(true);
   vi.mocked(insertAiAnalysis).mockReset().mockResolvedValue(undefined);
@@ -64,7 +67,7 @@ describe("POST /api/sync/analysis", () => {
     expect(getUpcomingMatches).toHaveBeenCalledWith(expect.anything(), 3, 15);
     expect(needsFreshAnalysis).toHaveBeenCalledWith(null, null);
     expect(generateMatchAnalysis).toHaveBeenCalledWith(
-      expect.objectContaining({ homeTeam: "Arsenal", awayTeam: "Chelsea", homeStats: null, awayStats: null }),
+      expect.objectContaining({ homeTeam: "Arsenal", awayTeam: "Chelsea", researchContext: null }),
     );
     expect(insertAiAnalysis).toHaveBeenCalledWith(
       expect.anything(),
@@ -125,7 +128,23 @@ describe("POST /api/sync/analysis", () => {
     await POST(makeRequest("Bearer test-secret") as any);
 
     expect(generateMatchAnalysis).toHaveBeenCalledWith(
-      expect.objectContaining({ homeStats: null, awayStats: null, odds: [] }),
+      expect.objectContaining({ researchContext: null, odds: [] }),
+    );
+  });
+
+  it("passes cached research content into the prompt when it exists", async () => {
+    vi.mocked(getUpcomingMatches).mockResolvedValue([match]);
+    vi.mocked(getMatchResearch).mockResolvedValue({
+      content: "Arsenal'de Saka sakat.",
+      sources: [],
+      modelUsed: "gemini-3.5-flash-lite",
+      generatedAt: "2026-09-14T10:00:00Z",
+    });
+
+    await POST(makeRequest("Bearer test-secret") as any);
+
+    expect(generateMatchAnalysis).toHaveBeenCalledWith(
+      expect.objectContaining({ researchContext: "Arsenal'de Saka sakat." }),
     );
   });
 });

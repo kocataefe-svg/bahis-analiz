@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseClient } from "@/lib/supabase";
 import { getUpcomingMatches } from "@/lib/db/matches";
 import { getLatestOdds } from "@/lib/db/odds";
+import { getMatchResearch } from "@/lib/db/match-research";
 import { getLatestAnalysisGeneratedAt, needsFreshAnalysis, insertAiAnalysis } from "@/lib/db/ai-analyses";
 import { generateMatchAnalysis, GEMINI_MODEL } from "@/lib/gemini";
 import { isSyncRequestAuthorized } from "@/lib/sync-auth";
@@ -25,9 +26,10 @@ export async function POST(request: NextRequest) {
 
   for (const match of matches) {
     try {
-      const [odds, latestAnalysisAt] = await Promise.all([
+      const [odds, latestAnalysisAt, research] = await Promise.all([
         getLatestOdds(supabase, match.id),
         getLatestAnalysisGeneratedAt(supabase, match.id),
+        getMatchResearch(supabase, match.id),
       ]);
 
       const latestDataFetchedAt = odds[0]?.fetchedAt ?? null;
@@ -41,8 +43,7 @@ export async function POST(request: NextRequest) {
         homeTeam: match.homeTeam,
         awayTeam: match.awayTeam,
         kickoffAt: match.kickoffAt,
-        homeStats: null,
-        awayStats: null,
+        researchContext: research?.content ?? null,
         odds: odds.map((o) => ({ bookmaker: o.bookmaker, outcome: o.outcome, price: o.price })),
       });
 

@@ -5,8 +5,7 @@ const baseInput = {
   homeTeam: "Arsenal",
   awayTeam: "Chelsea",
   kickoffAt: "2026-09-20T15:00:00Z",
-  homeStats: null,
-  awayStats: null,
+  researchContext: null,
   odds: [],
 };
 
@@ -26,39 +25,17 @@ describe("buildAnalysisPrompt", () => {
     expect(prompt).toContain("summary_text");
   });
 
-  it("marks missing home/away stats explicitly instead of omitting them", () => {
+  it("marks missing research context explicitly instead of omitting it", () => {
     const prompt = buildAnalysisPrompt(baseInput);
-    expect(prompt).toContain("istatistik verisi mevcut degil");
+    expect(prompt).toContain("Sakatlik/form/H2H arastirmasi mevcut degil");
   });
 
-  it("includes form/injury/card counts when stats are present", () => {
+  it("includes the cached research content when present", () => {
     const prompt = buildAnalysisPrompt({
       ...baseInput,
-      homeStats: {
-        form: "WWDLW",
-        injuries: [{ player: "X" }],
-        cards: [{ player: "Y" }],
-        lastMatches: [{ opponent: "Everton", goalsFor: 2, goalsAgainst: 1, result: "W" }],
-      },
+      researchContext: "Arsenal'de Saka sakat, Chelsea son 5 mactir yenilmiyor.",
     });
-    expect(prompt).toContain("WWDLW");
-    expect(prompt).toContain("Sakatlik/cezali sayisi: 1");
-    expect(prompt).toContain("1 oyuncu cezali");
-    expect(prompt).toContain("Everton");
-  });
-
-  it("never claims a verified zero card suspension count when cards data was simply never collected", () => {
-    const prompt = buildAnalysisPrompt({
-      ...baseInput,
-      homeStats: {
-        form: "WWDLW",
-        injuries: [],
-        cards: [],
-        lastMatches: [],
-      },
-    });
-    expect(prompt).toContain("veri toplanmiyor");
-    expect(prompt).not.toContain("Kart cezasi sayisi");
+    expect(prompt).toContain("Arsenal'de Saka sakat, Chelsea son 5 mactir yenilmiyor.");
   });
 
   it("marks missing odds explicitly and warns against value-bet commentary", () => {

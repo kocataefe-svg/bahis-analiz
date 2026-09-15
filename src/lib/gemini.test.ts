@@ -14,8 +14,7 @@ const minimalInput = {
   homeTeam: "Arsenal",
   awayTeam: "Chelsea",
   kickoffAt: "2026-09-20T15:00:00Z",
-  homeStats: null,
-  awayStats: null,
+  researchContext: null,
   odds: [],
 };
 
