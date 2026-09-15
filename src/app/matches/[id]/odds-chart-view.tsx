@@ -10,7 +10,7 @@ const MARGIN_TOP = 6;
 const MARGIN_RIGHT = 6;
 const SVG_WIDTH = PLOT_WIDTH + MARGIN_LEFT + MARGIN_RIGHT;
 const SVG_HEIGHT = PLOT_HEIGHT + MARGIN_TOP + MARGIN_BOTTOM;
-const SERIES_COLORS = ["#2563eb", "#6b7280", "#dc2626", "#16a34a"];
+const SERIES_COLORS = ["var(--odds)", "var(--text-dim)", "var(--danger)", "var(--accent)"];
 
 export function OddsChartView({ history }: { history: OddsHistoryPoint[] }) {
   const series = buildOddsChartSeries(history, PLOT_WIDTH, PLOT_HEIGHT);

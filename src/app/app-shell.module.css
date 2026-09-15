@@ -1,0 +1,59 @@
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.iconButton {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 18px;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.spacer {
+  width: 32px;
+  flex-shrink: 0;
+}
+
+.brand {
+  flex: 1;
+  font-family: var(--font-display), sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.couponButton {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.couponButton span {
+  font-family: var(--font-display), sans-serif;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}

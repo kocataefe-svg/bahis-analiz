@@ -14,6 +14,7 @@ import { formatKickoffTime, formatRelativeUpdate } from "@/lib/format";
 import { OddsChartView } from "./odds-chart-view";
 import { ManualOddsForm } from "./manual-odds-form";
 import { ResearchButton } from "./research-button";
+import { OddsChip } from "./odds-chip";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -71,12 +72,12 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
         )
       : [];
 
+  const matchLabel = `${match.homeTeam} - ${match.awayTeam}`;
+
   return (
     <main className={styles.page}>
       <p className={styles.league}>{league ? `${league.name} (${league.country})` : ""}</p>
-      <h1 className={styles.title}>
-        {match.homeTeam} - {match.awayTeam}
-      </h1>
+      <h1 className={styles.title}>{matchLabel}</h1>
       <p className={styles.kickoff}>{formatKickoffTime(match.kickoffAt)}</p>
 
       <section className={styles.section}>
@@ -114,15 +115,21 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
           <p className={styles.noData}>Oran verisi mevcut degil.</p>
         ) : (
           [...oddsByMarket.entries()].map(([market, quotes]) => (
-            <div key={market}>
+            <div key={market} className={styles.marketBlock}>
               <h3>{MARKET_LABELS[market] ?? market}</h3>
-              <ul className={styles.oddsList}>
+              <div className={styles.chipGrid}>
                 {quotes.map((o, i) => (
-                  <li key={`${market}-${o.bookmaker}-${o.outcome}-${i}`}>
-                    {o.outcome}: {o.price} ({o.bookmaker})
-                  </li>
+                  <OddsChip
+                    key={`${market}-${o.bookmaker}-${o.outcome}-${i}`}
+                    matchId={match.id}
+                    matchLabel={matchLabel}
+                    market={market}
+                    outcome={o.outcome}
+                    price={o.price}
+                    bookmaker={o.bookmaker}
+                  />
                 ))}
-              </ul>
+              </div>
             </div>
           ))
         )}

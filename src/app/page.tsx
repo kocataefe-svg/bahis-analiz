@@ -18,7 +18,6 @@ export default async function HomePage() {
 
   return (
     <main className={styles.page}>
-      <h1 className={styles.title}>Bahis Analiz</h1>
       <p className={styles.subtitle}>
         Referans oranlar uluslararasi bookmaker&apos;lardan gelir, Iddaa/Bilyoner&apos;deki oranla birebir ayni
         degildir.

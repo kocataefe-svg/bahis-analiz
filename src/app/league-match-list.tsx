@@ -38,19 +38,21 @@ export function LeagueMatchList({ leagues, matches }: { leagues: DisplayLeague[]
 
   return (
     <div className={styles.container}>
-      <fieldset className={styles.leagueFilter}>
-        <legend>Ligler</legend>
-        {leagues.map((league) => (
-          <label key={league.id} className={styles.leagueCheckbox}>
-            <input
-              type="checkbox"
-              checked={selectedLeagueIds.has(league.id)}
-              onChange={() => toggleLeague(league.id)}
-            />
-            {league.name} ({league.country})
-          </label>
-        ))}
-      </fieldset>
+      <details className={styles.leagueFilter}>
+        <summary>Ligler ({selectedLeagueIds.size}/{leagues.length})</summary>
+        <div className={styles.leagueCheckboxes}>
+          {leagues.map((league) => (
+            <label key={league.id} className={styles.leagueCheckbox}>
+              <input
+                type="checkbox"
+                checked={selectedLeagueIds.has(league.id)}
+                onChange={() => toggleLeague(league.id)}
+              />
+              {league.name} ({league.country})
+            </label>
+          ))}
+        </div>
+      </details>
 
       <div className={styles.matchList}>
         {[...matchesByDay.entries()].map(([day, dayMatches]) => (

@@ -1,0 +1,48 @@
+.chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 76px;
+  padding: 8px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+}
+
+.chip:active {
+  background: var(--border);
+}
+
+.chipSelected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #062b16;
+}
+
+.chipSelected .price {
+  color: #062b16;
+}
+
+.chipSelected .bookmaker {
+  color: #0d3b21;
+}
+
+.outcome {
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.price {
+  font-family: var(--font-display), sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--odds);
+}
+
+.bookmaker {
+  font-size: 10px;
+  color: var(--text-dim);
+}

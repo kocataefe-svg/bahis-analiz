@@ -1,90 +1,107 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
 .leagueFilter {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--surface);
+  font-size: 13px;
+}
+
+.leagueFilter summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.leagueCheckboxes {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 16px;
-  border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
-  border-radius: 8px;
-  padding: 12px;
+  gap: 6px 14px;
+  margin-top: 10px;
 }
 
 .leagueCheckbox {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
 }
 
 .matchList {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
 }
 
 .daySection {
   display: flex;
   flex-direction: column;
-  gap: 8px;
 }
 
 .dayHeading {
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 600;
+  color: var(--text-dim);
   text-transform: capitalize;
-}
-
-.matchInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.leagueTag {
-  font-weight: 400;
-  opacity: 0.6;
-  font-size: 12px;
+  padding: 4px 4px 8px;
 }
 
 .matches {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  border-top: 1px solid var(--border);
 }
 
 .matchLink {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 12px;
-  padding: 10px 12px;
-  border-radius: 6px;
-  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.matchLink:active {
+  background: var(--surface-2);
+}
+
+.matchInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.leagueTag {
+  font-weight: 400;
+  color: var(--text-dim);
+  font-size: 11px;
 }
 
 .teams {
   font-weight: 500;
-}
-
-.kickoff {
-  font-size: 13px;
-  opacity: 0.7;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.empty {
-  opacity: 0.7;
-  font-size: 14px;
+.kickoff {
+  font-family: var(--font-display), sans-serif;
+  font-size: 13px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-@media (max-width: 480px) {
-  .matchLink {
-    flex-direction: column;
-    gap: 4px;
-  }
+.empty {
+  color: var(--text-dim);
+  font-size: 14px;
 }

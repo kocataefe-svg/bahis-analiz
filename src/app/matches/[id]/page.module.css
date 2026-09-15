@@ -1,41 +1,67 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  max-width: 720px;
+  gap: 4px;
+  max-width: 560px;
+  width: 100%;
   margin: 0 auto;
-  padding: 24px 16px 64px;
+  padding: 12px 12px 64px;
 }
 
 .league {
-  font-size: 13px;
-  opacity: 0.6;
+  font-size: 12px;
+  color: var(--text-dim);
 }
 
 .title {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 600;
 }
 
 .kickoff {
-  font-size: 14px;
-  opacity: 0.7;
+  font-family: var(--font-display), sans-serif;
+  font-size: 13px;
+  color: var(--odds);
   margin-bottom: 8px;
 }
 
 .section {
-  border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent);
-  padding-top: 16px;
-  margin-top: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-top: 10px;
   display: flex;
   flex-direction: column;
+  gap: 8px;
+}
+
+.section h2 {
+  font-size: 15px;
+}
+
+.section h3 {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.marketBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chipGrid {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 .researchContent {
   white-space: pre-wrap;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .sourcesList {
@@ -44,7 +70,7 @@
   flex-direction: column;
   gap: 4px;
   font-size: 12px;
-  opacity: 0.8;
+  color: var(--text-dim);
 }
 
 .oddsList {
@@ -66,13 +92,11 @@
 
 .chartAxisLabel {
   font-size: 8px;
-  fill: currentColor;
-  opacity: 0.6;
+  fill: var(--text-dim);
 }
 
 .chartGridLine {
-  stroke: currentColor;
-  stroke-opacity: 0.1;
+  stroke: var(--border);
   stroke-width: 1;
 }
 
@@ -81,19 +105,27 @@
   flex-direction: column;
   gap: 12px;
   font-size: 14px;
+  line-height: 1.6;
+}
+
+.analysis h3 {
+  margin-bottom: 2px;
 }
 
 .summary {
-  font-weight: 600;
+  font-weight: 500;
+  color: var(--text);
+  border-left: 2px solid var(--accent);
+  padding-left: 10px;
 }
 
 .noData {
-  opacity: 0.6;
+  color: var(--text-dim);
   font-size: 13px;
   font-style: italic;
 }
 
 .updatedAt {
-  font-size: 12px;
-  opacity: 0.6;
+  font-size: 11px;
+  color: var(--text-dim);
 }
