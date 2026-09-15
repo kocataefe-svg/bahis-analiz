@@ -33,43 +33,78 @@ const JSON_FORMAT_INSTRUCTION = [
   "JSON tam olarak su alanlari icermeli: team_analyst_text, betting_analyst_text, commentator_text, surprise_pick_text, summary_text (hepsi string).",
 ].join("\n");
 
+const RETRY_AFTER_PATTERN = /try again in ([\d.]+)s/i;
+const MAX_RETRY_WAIT_MS = 8000;
+const FALLBACK_RETRY_WAIT_MS = 3000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function parseRetryWaitMs(errorBody: string): number {
+  const match = errorBody.match(RETRY_AFTER_PATTERN);
+  if (!match) return FALLBACK_RETRY_WAIT_MS;
+  const seconds = parseFloat(match[1]);
+  if (Number.isNaN(seconds)) return FALLBACK_RETRY_WAIT_MS;
+  return Math.min(Math.ceil(seconds * 1000) + 250, MAX_RETRY_WAIT_MS);
+}
+
+async function callGroqOnce(apiKey: string, prompt: string): Promise<{ ok: true; content: string } | { ok: false; status: number; body: string }> {
+  const res = await fetch(GROQ_API_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" },
+      // gpt-oss reasoning modelidir; varsayilan max_completion_tokens (1024)
+      // gizli "reasoning" tokenlarina gidip JSON govdesi bitmeden kesilebiliyor
+      // (canli testte gorulen bir hata). Dusuk reasoning + makul token payi
+      // bu riski azaltir - gorev derin akil yurutme gerektirmiyor. Cok
+      // yuksek tutmuyoruz cunku Groq'un dakikalik (TPM) limiti bu degeri
+      // rezerve ediyor - buyutmek art arda cagrilarda 429'u hizlandirir.
+      reasoning_effort: "low",
+      max_completion_tokens: 2000,
+    }),
+  });
+
+  if (!res.ok) {
+    return { ok: false, status: res.status, body: await res.text() };
+  }
+
+  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) {
+    return { ok: false, status: res.status, body: "bos yanit (content yok)" };
+  }
+  return { ok: true, content };
+}
+
 export async function generateMatchAnalysis(input: AnalysisPromptInput): Promise<MatchAnalysisResult | null> {
   const apiKey = getApiKey();
   const prompt = buildAnalysisPrompt(input) + JSON_FORMAT_INSTRUCTION;
 
   let outputText: string;
   try {
-    const res = await fetch(GROQ_API_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages: [{ role: "user", content: prompt }],
-        response_format: { type: "json_object" },
-        // gpt-oss reasoning modelidir; varsayilan max_completion_tokens (1024)
-        // gizli "reasoning" tokenlarina gidip JSON govdesi bitmeden kesilebiliyor
-        // (canli testte gorulen bir hata). Dusuk reasoning + genis token payi
-        // bu riski ortadan kaldirir - gorev zaten derin akil yurutme gerektirmiyor.
-        reasoning_effort: "low",
-        max_completion_tokens: 3500,
-      }),
-    });
+    let result = await callGroqOnce(apiKey, prompt);
 
-    if (!res.ok) {
-      console.warn(`Groq analiz uretimi basarisiz (API hatasi): ${res.status} ${await res.text()}`);
-      return null;
+    // Free tier TPM (dakikalik token) limitine takilmak art arda cok mac
+    // islerken beklenen bir durum - Groq'un bildirdigi bekleme suresi
+    // kadar durup TEK seferlik tekrar dener, sonra pes eder (bir sonraki
+    // gunluk cron zaten tekrar dener).
+    if (!result.ok && result.status === 429) {
+      await sleep(parseRetryWaitMs(result.body));
+      result = await callGroqOnce(apiKey, prompt);
     }
 
-    const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-    const content = data.choices?.[0]?.message?.content;
-    if (!content) {
-      console.warn("Groq yaniti bos (content yok)");
+    if (!result.ok) {
+      console.warn(`Groq analiz uretimi basarisiz (API hatasi): ${result.status} ${result.body}`);
       return null;
     }
-    outputText = content;
+    outputText = result.content;
   } catch (err) {
     console.warn("Groq analiz uretimi basarisiz (ag hatasi):", err);
     return null;

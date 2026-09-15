@@ -53,7 +53,8 @@ describe("generateMatchAnalysis", () => {
     expect(body.model).toBe(GROQ_MODEL);
     expect(body.response_format).toEqual({ type: "json_object" });
     expect(body.reasoning_effort).toBe("low");
-    expect(body.max_completion_tokens).toBeGreaterThanOrEqual(2048);
+    expect(body.max_completion_tokens).toBeGreaterThanOrEqual(1024);
+    expect(fetch).toHaveBeenCalledTimes(1);
 
     expect(result).toEqual({
       teamAnalystText: "takim analizi",
@@ -67,6 +68,48 @@ describe("generateMatchAnalysis", () => {
   it("returns null when the request fails", async () => {
     mockFetchOnce({ error: "boom" }, false, 500);
     const result = await generateMatchAnalysis(minimalInput);
+    expect(result).toBeNull();
+  });
+
+  it("retries once after a 429 rate-limit, waiting the server-suggested time, and succeeds", async () => {
+    const rateLimitBody = {
+      error: { message: "Rate limit reached ... Please try again in 0.001s.", type: "tokens" },
+    };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        text: async () => JSON.stringify(rateLimitBody),
+        json: async () => rateLimitBody,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ choices: [{ message: { content: validAnalysisContent() } }] }),
+        text: async () => "",
+      });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await generateMatchAnalysis(minimalInput);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result?.summaryText).toBe("ozet");
+  });
+
+  it("gives up (returns null) if the retry also hits a 429", async () => {
+    const rateLimitBody = { error: { message: "Please try again in 0.001s.", type: "tokens" } };
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 429,
+      text: async () => JSON.stringify(rateLimitBody),
+      json: async () => rateLimitBody,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await generateMatchAnalysis(minimalInput);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(result).toBeNull();
   });
 
