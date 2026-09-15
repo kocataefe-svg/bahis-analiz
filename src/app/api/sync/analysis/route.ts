@@ -5,7 +5,7 @@ import { getLatestOdds } from "@/lib/db/odds";
 import { getMatchResearch } from "@/lib/db/match-research";
 import { getActiveLeagues } from "@/lib/db/leagues";
 import { getLatestAnalysisGeneratedAt, needsFreshAnalysis, insertAiAnalysis } from "@/lib/db/ai-analyses";
-import { generateMatchAnalysis, GROQ_MODEL } from "@/lib/groq";
+import { generateFullAnalysis } from "@/lib/analysis-orchestrator";
 import { ensureExtraMarketsOdds } from "@/lib/odds-enrichment";
 import { isSyncRequestAuthorized } from "@/lib/sync-auth";
 
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const result = await generateMatchAnalysis({
+      const result = await generateFullAnalysis({
         homeTeam: match.homeTeam,
         awayTeam: match.awayTeam,
         kickoffAt: match.kickoffAt,
@@ -83,15 +83,7 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      await insertAiAnalysis(supabase, {
-        match_id: match.id,
-        team_analyst_text: result.teamAnalystText,
-        betting_analyst_text: result.bettingAnalystText,
-        commentator_text: result.commentatorText,
-        surprise_pick_text: result.surprisePickText,
-        summary_text: result.summaryText,
-        model_used: GROQ_MODEL,
-      });
+      await insertAiAnalysis(supabase, { match_id: match.id, ...result });
 
       generated += 1;
     } catch (err) {

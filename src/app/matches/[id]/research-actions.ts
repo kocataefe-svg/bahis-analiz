@@ -7,7 +7,7 @@ import { getMatchResearch, insertMatchResearch } from "@/lib/db/match-research";
 import { getLatestOdds } from "@/lib/db/odds";
 import { insertAiAnalysis } from "@/lib/db/ai-analyses";
 import { researchMatchContext, RESEARCH_MODEL } from "@/lib/gemini-research";
-import { generateMatchAnalysis, GROQ_MODEL } from "@/lib/groq";
+import { generateFullAnalysis } from "@/lib/analysis-orchestrator";
 
 export interface ResearchMatchState {
   error: string | null;
@@ -64,7 +64,7 @@ async function regenerateAnalysisWithResearch(
 ): Promise<void> {
   try {
     const odds = await getLatestOdds(supabase, match.id);
-    const analysis = await generateMatchAnalysis({
+    const analysis = await generateFullAnalysis({
       homeTeam: match.homeTeam,
       awayTeam: match.awayTeam,
       kickoffAt: match.kickoffAt,
@@ -73,15 +73,7 @@ async function regenerateAnalysisWithResearch(
     });
     if (!analysis) return;
 
-    await insertAiAnalysis(supabase, {
-      match_id: match.id,
-      team_analyst_text: analysis.teamAnalystText,
-      betting_analyst_text: analysis.bettingAnalystText,
-      commentator_text: analysis.commentatorText,
-      surprise_pick_text: analysis.surprisePickText,
-      summary_text: analysis.summaryText,
-      model_used: GROQ_MODEL,
-    });
+    await insertAiAnalysis(supabase, { match_id: match.id, ...analysis });
   } catch (err) {
     console.warn(`Arastirma sonrasi analiz yenileme basarisiz: match=${match.id} ->`, err);
   }

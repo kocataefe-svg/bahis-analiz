@@ -10,7 +10,7 @@ vi.mock("@/lib/db/ai-analyses", () => ({
   needsFreshAnalysis: vi.fn(),
   insertAiAnalysis: vi.fn(),
 }));
-vi.mock("@/lib/groq", () => ({ generateMatchAnalysis: vi.fn(), GROQ_MODEL: "openai/gpt-oss-20b" }));
+vi.mock("@/lib/analysis-orchestrator", () => ({ generateFullAnalysis: vi.fn() }));
 vi.mock("@/lib/odds-enrichment", () => ({ ensureExtraMarketsOdds: vi.fn() }));
 
 import { POST } from "./route";
@@ -19,7 +19,7 @@ import { getLatestOdds } from "@/lib/db/odds";
 import { getMatchResearch } from "@/lib/db/match-research";
 import { getActiveLeagues } from "@/lib/db/leagues";
 import { getLatestAnalysisGeneratedAt, needsFreshAnalysis, insertAiAnalysis } from "@/lib/db/ai-analyses";
-import { generateMatchAnalysis } from "@/lib/groq";
+import { generateFullAnalysis } from "@/lib/analysis-orchestrator";
 import { ensureExtraMarketsOdds } from "@/lib/odds-enrichment";
 
 function makeRequest(authHeader?: string): Request {
@@ -37,6 +37,15 @@ const match = {
   oddsApiEventId: "evt1",
 };
 
+const fullAnalysisResult = {
+  team_analyst_text: "a",
+  betting_analyst_text: "b",
+  commentator_text: "c",
+  surprise_pick_text: "e",
+  summary_text: "d",
+  model_used: "openai/gpt-oss-20b+gemini-3.5-flash-lite",
+};
+
 beforeEach(() => {
   vi.stubEnv("CRON_SECRET", "test-secret");
   vi.mocked(getUpcomingMatches).mockReset();
@@ -47,13 +56,7 @@ beforeEach(() => {
   vi.mocked(getLatestAnalysisGeneratedAt).mockReset().mockResolvedValue(null);
   vi.mocked(needsFreshAnalysis).mockReset().mockReturnValue(true);
   vi.mocked(insertAiAnalysis).mockReset().mockResolvedValue(undefined);
-  vi.mocked(generateMatchAnalysis).mockReset().mockResolvedValue({
-    teamAnalystText: "a",
-    bettingAnalystText: "b",
-    commentatorText: "c",
-    surprisePickText: "e",
-    summaryText: "d",
-  });
+  vi.mocked(generateFullAnalysis).mockReset().mockResolvedValue(fullAnalysisResult);
 });
 
 afterEach(() => {
@@ -75,20 +78,12 @@ describe("POST /api/sync/analysis", () => {
     expect(res.status).toBe(200);
     expect(getUpcomingMatches).toHaveBeenCalledWith(expect.anything(), 3, 8);
     expect(needsFreshAnalysis).toHaveBeenCalledWith(null, null);
-    expect(generateMatchAnalysis).toHaveBeenCalledWith(
+    expect(generateFullAnalysis).toHaveBeenCalledWith(
       expect.objectContaining({ homeTeam: "Arsenal", awayTeam: "Chelsea", researchContext: null }),
     );
     expect(insertAiAnalysis).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({
-        match_id: "m1",
-        team_analyst_text: "a",
-        betting_analyst_text: "b",
-        commentator_text: "c",
-        surprise_pick_text: "e",
-        summary_text: "d",
-        model_used: "openai/gpt-oss-20b",
-      }),
+      expect.objectContaining({ match_id: "m1", ...fullAnalysisResult }),
     );
     expect(body).toEqual({ ok: true, generated: 1, skipped: 0, failed: 0 });
   });
@@ -113,7 +108,7 @@ describe("POST /api/sync/analysis", () => {
     await POST(makeRequest("Bearer test-secret") as any);
 
     expect(getLatestOdds).toHaveBeenCalledTimes(2);
-    expect(generateMatchAnalysis).toHaveBeenCalledWith(
+    expect(generateFullAnalysis).toHaveBeenCalledWith(
       expect.objectContaining({ odds: [{ market: "totals", bookmaker: "pinnacle", outcome: "Over 2.5", price: 1.9 }] }),
     );
   });
@@ -134,20 +129,14 @@ describe("POST /api/sync/analysis", () => {
     const res = await POST(makeRequest("Bearer test-secret") as any);
     const body = await res.json();
 
-    expect(generateMatchAnalysis).not.toHaveBeenCalled();
+    expect(generateFullAnalysis).not.toHaveBeenCalled();
     expect(insertAiAnalysis).not.toHaveBeenCalled();
     expect(body).toEqual({ ok: true, generated: 0, skipped: 1, failed: 0 });
   });
 
-  it("counts a failure and continues when generateMatchAnalysis returns null", async () => {
+  it("counts a failure and continues when generateFullAnalysis returns null", async () => {
     vi.mocked(getUpcomingMatches).mockResolvedValue([match, { ...match, id: "m2" }]);
-    vi.mocked(generateMatchAnalysis).mockResolvedValueOnce(null).mockResolvedValueOnce({
-      teamAnalystText: "a",
-      bettingAnalystText: "b",
-      commentatorText: "c",
-      surprisePickText: "e",
-      summaryText: "d",
-    });
+    vi.mocked(generateFullAnalysis).mockResolvedValueOnce(null).mockResolvedValueOnce(fullAnalysisResult);
 
     const res = await POST(makeRequest("Bearer test-secret") as any);
     const body = await res.json();
@@ -172,7 +161,7 @@ describe("POST /api/sync/analysis", () => {
 
     await POST(makeRequest("Bearer test-secret") as any);
 
-    expect(generateMatchAnalysis).toHaveBeenCalledWith(
+    expect(generateFullAnalysis).toHaveBeenCalledWith(
       expect.objectContaining({ researchContext: null, odds: [] }),
     );
   });
@@ -188,7 +177,7 @@ describe("POST /api/sync/analysis", () => {
 
     await POST(makeRequest("Bearer test-secret") as any);
 
-    expect(generateMatchAnalysis).toHaveBeenCalledWith(
+    expect(generateFullAnalysis).toHaveBeenCalledWith(
       expect.objectContaining({ researchContext: "Arsenal'de Saka sakat." }),
     );
   });

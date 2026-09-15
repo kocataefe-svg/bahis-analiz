@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildAnalysisPrompt } from "./analysis-prompt";
+import { buildTeamAndCommentaryPrompt, buildBettingAndSurprisePrompt } from "./analysis-prompt";
 
 const baseInput = {
   homeTeam: "Arsenal",
@@ -9,29 +9,32 @@ const baseInput = {
   odds: [],
 };
 
-describe("buildAnalysisPrompt", () => {
+describe("buildTeamAndCommentaryPrompt (Groq: Takim Analizcisi + Yorumcu)", () => {
   it("includes both team names and kickoff time", () => {
-    const prompt = buildAnalysisPrompt(baseInput);
+    const prompt = buildTeamAndCommentaryPrompt(baseInput);
     expect(prompt).toContain("Arsenal");
     expect(prompt).toContain("Chelsea");
     expect(prompt).toContain("2026-09-20T15:00:00Z");
   });
 
-  it("asks for all three personas and a summary field", () => {
-    const prompt = buildAnalysisPrompt(baseInput);
+  it("asks for the two core personas and the JSON fields it needs", () => {
+    const prompt = buildTeamAndCommentaryPrompt(baseInput);
     expect(prompt).toContain("Takim Analizcisi");
-    expect(prompt).toContain("Bahis Analizcisi");
     expect(prompt).toContain("Yorumcu");
+    expect(prompt).toContain("team_analyst_text");
+    expect(prompt).toContain("commentator_text");
     expect(prompt).toContain("summary_text");
+    expect(prompt).not.toContain("Bahis Analizcisi");
+    expect(prompt).not.toContain("Surpriz Yorumcu");
   });
 
   it("marks missing research context explicitly instead of omitting it", () => {
-    const prompt = buildAnalysisPrompt(baseInput);
+    const prompt = buildTeamAndCommentaryPrompt(baseInput);
     expect(prompt).toContain("Sakatlik/form/H2H arastirmasi mevcut degil");
   });
 
   it("includes the cached research content when present", () => {
-    const prompt = buildAnalysisPrompt({
+    const prompt = buildTeamAndCommentaryPrompt({
       ...baseInput,
       researchContext: "Arsenal'de Saka sakat, Chelsea son 5 mactir yenilmiyor.",
     });
@@ -39,22 +42,12 @@ describe("buildAnalysisPrompt", () => {
   });
 
   it("marks missing odds explicitly and warns against value-bet commentary", () => {
-    const prompt = buildAnalysisPrompt(baseInput);
+    const prompt = buildTeamAndCommentaryPrompt(baseInput);
     expect(prompt).toContain("Oran verisi mevcut degil");
   });
 
-  it("includes bookmaker/outcome/price when odds are present", () => {
-    const prompt = buildAnalysisPrompt({
-      ...baseInput,
-      odds: [{ market: "h2h", bookmaker: "pinnacle", outcome: "Arsenal", price: 1.8 }],
-    });
-    expect(prompt).toContain("pinnacle");
-    expect(prompt).toContain("Arsenal");
-    expect(prompt).toContain("1.8");
-  });
-
-  it("groups odds by market with Turkish labels and tells the model to comment on every market present", () => {
-    const prompt = buildAnalysisPrompt({
+  it("groups odds by market with Turkish labels and tells the model to comment on every mandatory market present", () => {
+    const prompt = buildTeamAndCommentaryPrompt({
       ...baseInput,
       odds: [
         { market: "h2h", bookmaker: "pinnacle", outcome: "Arsenal", price: 1.8 },
@@ -69,7 +62,7 @@ describe("buildAnalysisPrompt", () => {
   });
 
   it("ignores odds from unknown market keys (e.g. Betfair exchange h2h_lay)", () => {
-    const prompt = buildAnalysisPrompt({
+    const prompt = buildTeamAndCommentaryPrompt({
       ...baseInput,
       odds: [{ market: "h2h_lay", bookmaker: "betfair_ex_eu", outcome: "Arsenal", price: 4.5 }],
     });
@@ -78,8 +71,8 @@ describe("buildAnalysisPrompt", () => {
     expect(prompt).toContain("Oran verisi mevcut degil");
   });
 
-  it("tells the model not to comment on markets that have no odds data", () => {
-    const prompt = buildAnalysisPrompt({
+  it("tells the model not to comment on mandatory markets that have no odds data", () => {
+    const prompt = buildTeamAndCommentaryPrompt({
       ...baseInput,
       odds: [{ market: "h2h", bookmaker: "pinnacle", outcome: "Arsenal", price: 1.8 }],
     });
@@ -88,38 +81,8 @@ describe("buildAnalysisPrompt", () => {
     expect(prompt).toContain("bunlar hakkinda yorum/tahmin yapma");
   });
 
-  it("demands a decisive 'Tahminim: ...' pick per market and forbids hedging language", () => {
-    const prompt = buildAnalysisPrompt(baseInput);
-    expect(prompt).toContain("Tahminim:");
-    expect(prompt).toContain("YASAK");
-    expect(prompt).toContain("net bir tahmin");
-  });
-
-  it("allows (but does not require) an optional combined two-pick suggestion", () => {
-    const prompt = buildAnalysisPrompt(baseInput);
-    expect(prompt).toContain("Kombine onerim");
-    expect(prompt).toContain("opsiyoneldir");
-  });
-
-  it("tells the team analyst persona to actually use the research content, not just acknowledge its absence", () => {
-    const prompt = buildAnalysisPrompt(baseInput);
-    expect(prompt).toContain("mutlaka kullan");
-  });
-
-  it("forbids inventing numeric stats (goal averages, injury counts) when there is no research context", () => {
-    const prompt = buildAnalysisPrompt(baseInput);
-    expect(prompt).toContain("UYDURMA");
-    expect(prompt).toContain("gol ortalamasi");
-  });
-
-  it("asks for natural, readable prose instead of a number/odds dump", () => {
-    const prompt = buildAnalysisPrompt(baseInput);
-    expect(prompt).toContain("OKUNABILIRLIK");
-    expect(prompt).toContain("ASLA SAYI UYDURMA");
-  });
-
-  it("includes optional markets (e.g. first-half totals) in the odds listing without demanding a mandatory pick for them", () => {
-    const prompt = buildAnalysisPrompt({
+  it("includes optional markets (e.g. first-half totals) without demanding a mandatory pick for them", () => {
+    const prompt = buildTeamAndCommentaryPrompt({
       ...baseInput,
       odds: [
         { market: "h2h", bookmaker: "pinnacle", outcome: "Arsenal", price: 1.8 },
@@ -128,7 +91,62 @@ describe("buildAnalysisPrompt", () => {
     });
     expect(prompt).toContain("Ilk Yari 1.5 Alt/Ust");
     expect(prompt).toContain("opsiyoneldir");
-    // Mandatory markets (totals/btts) missing -> still flagged as such, but totals_h1 is not treated as mandatory
-    expect(prompt).toContain("2.5 Alt/Ust, Karsilikli Gol (KG Var/Yok)");
+  });
+
+  it("demands a decisive 'Tahminim: ...' pick per market and forbids hedging language", () => {
+    const prompt = buildTeamAndCommentaryPrompt(baseInput);
+    expect(prompt).toContain("Tahminim:");
+    expect(prompt).toContain("YASAK");
+    expect(prompt).toContain("net bir tahmin");
+  });
+
+  it("tells the team analyst persona to actually use the research content, not just acknowledge its absence", () => {
+    const prompt = buildTeamAndCommentaryPrompt(baseInput);
+    expect(prompt).toContain("mutlaka kullan");
+  });
+
+  it("forbids inventing numeric stats (goal averages, injury counts) when there is no research context", () => {
+    const prompt = buildTeamAndCommentaryPrompt(baseInput);
+    expect(prompt).toContain("UYDURMA");
+    expect(prompt).toContain("gol ortalamasi");
+  });
+
+  it("asks for natural, readable prose instead of a number/odds dump", () => {
+    const prompt = buildTeamAndCommentaryPrompt(baseInput);
+    expect(prompt).toContain("OKUNABILIRLIK");
+    expect(prompt).toContain("ASLA SAYI UYDURMA");
+  });
+});
+
+describe("buildBettingAndSurprisePrompt (Gemini: Bahis Analizcisi + Surpriz Yorumcu)", () => {
+  it("asks for the two numeric-heavy personas and the JSON fields it needs, not the core two", () => {
+    const prompt = buildBettingAndSurprisePrompt(baseInput);
+    expect(prompt).toContain("Bahis Analizcisi");
+    expect(prompt).toContain("Surpriz Yorumcu");
+    expect(prompt).toContain("betting_analyst_text");
+    expect(prompt).toContain("surprise_pick_text");
+    expect(prompt).not.toContain("Takim Analizcisi");
+  });
+
+  it("allows a combined two-item surprise suggestion and forbids inventing Turkish-site-specific odds", () => {
+    const prompt = buildBettingAndSurprisePrompt(baseInput);
+    expect(prompt).toContain("sürpriz kombinasyon");
+    expect(prompt).toContain("UYDURMA");
+    expect(prompt).toContain("Bilyoner");
+  });
+
+  it("includes odds and research context like the other prompt", () => {
+    const prompt = buildBettingAndSurprisePrompt({
+      ...baseInput,
+      odds: [{ market: "h2h", bookmaker: "pinnacle", outcome: "Arsenal", price: 1.8 }],
+      researchContext: "Arsenal formda.",
+    });
+    expect(prompt).toContain("pinnacle");
+    expect(prompt).toContain("Arsenal formda.");
+  });
+
+  it("forbids fabricated numeric stats here too", () => {
+    const prompt = buildBettingAndSurprisePrompt(baseInput);
+    expect(prompt).toContain("ASLA SAYI UYDURMA");
   });
 });

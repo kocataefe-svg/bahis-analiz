@@ -1,21 +1,18 @@
-import { buildAnalysisPrompt, type AnalysisPromptInput } from "./analysis-prompt";
+import { buildTeamAndCommentaryPrompt, type AnalysisPromptInput } from "./analysis-prompt";
 
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 export const GROQ_MODEL = "openai/gpt-oss-20b";
 
-export interface MatchAnalysisResult {
+/** Takim Analizcisi + Yorumcu + ozet - "cekirdek" iki persona (bkz. analysis-prompt.ts). */
+export interface TeamAndCommentaryResult {
   teamAnalystText: string;
-  bettingAnalystText: string;
   commentatorText: string;
-  surprisePickText: string;
   summaryText: string;
 }
 
 interface RawAnalysisJson {
   team_analyst_text?: string;
-  betting_analyst_text?: string;
   commentator_text?: string;
-  surprise_pick_text?: string;
   summary_text?: string;
 }
 
@@ -26,12 +23,6 @@ function getApiKey(): string {
   }
   return key;
 }
-
-const JSON_FORMAT_INSTRUCTION = [
-  "",
-  "Yanitini SADECE gecerli bir JSON nesnesi olarak ver, baska hicbir metin ekleme (aciklama, markdown code fence vb. yok).",
-  "JSON tam olarak su alanlari icermeli: team_analyst_text, betting_analyst_text, commentator_text, surprise_pick_text, summary_text (hepsi string).",
-].join("\n");
 
 const RETRY_AFTER_PATTERN = /try again in ([\d.]+)s/i;
 const MAX_RETRY_WAIT_MS = 8000;
@@ -67,7 +58,7 @@ async function callGroqOnce(apiKey: string, prompt: string): Promise<{ ok: true;
       // yuksek tutmuyoruz cunku Groq'un dakikalik (TPM) limiti bu degeri
       // rezerve ediyor - buyutmek art arda cagrilarda 429'u hizlandirir.
       reasoning_effort: "low",
-      max_completion_tokens: 2000,
+      max_completion_tokens: 1500,
     }),
   });
 
@@ -83,9 +74,9 @@ async function callGroqOnce(apiKey: string, prompt: string): Promise<{ ok: true;
   return { ok: true, content };
 }
 
-export async function generateMatchAnalysis(input: AnalysisPromptInput): Promise<MatchAnalysisResult | null> {
+export async function generateMatchAnalysis(input: AnalysisPromptInput): Promise<TeamAndCommentaryResult | null> {
   const apiKey = getApiKey();
-  const prompt = buildAnalysisPrompt(input) + JSON_FORMAT_INSTRUCTION;
+  const prompt = buildTeamAndCommentaryPrompt(input);
 
   let outputText: string;
   try {
@@ -118,22 +109,14 @@ export async function generateMatchAnalysis(input: AnalysisPromptInput): Promise
     return null;
   }
 
-  if (
-    !parsed.team_analyst_text ||
-    !parsed.betting_analyst_text ||
-    !parsed.commentator_text ||
-    !parsed.surprise_pick_text ||
-    !parsed.summary_text
-  ) {
+  if (!parsed.team_analyst_text || !parsed.commentator_text || !parsed.summary_text) {
     console.warn("Groq yaniti eksik alan iceriyor");
     return null;
   }
 
   return {
     teamAnalystText: parsed.team_analyst_text,
-    bettingAnalystText: parsed.betting_analyst_text,
     commentatorText: parsed.commentator_text,
-    surprisePickText: parsed.surprise_pick_text,
     summaryText: parsed.summary_text,
   };
 }

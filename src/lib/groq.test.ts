@@ -19,9 +19,7 @@ function mockFetchOnce(body: unknown, ok = true, status = 200) {
 function validAnalysisContent() {
   return JSON.stringify({
     team_analyst_text: "takim analizi",
-    betting_analyst_text: "bahis analizi",
     commentator_text: "yorum",
-    surprise_pick_text: "surpriz tahmin",
     summary_text: "ozet",
   });
 }
@@ -58,9 +56,7 @@ describe("generateMatchAnalysis", () => {
 
     expect(result).toEqual({
       teamAnalystText: "takim analizi",
-      bettingAnalystText: "bahis analizi",
       commentatorText: "yorum",
-      surprisePickText: "surpriz tahmin",
       summaryText: "ozet",
     });
   });
