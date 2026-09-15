@@ -52,10 +52,11 @@ function formatOdds(odds: OddsForPrompt[]): string {
 export function buildAnalysisPrompt(input: AnalysisPromptInput): string {
   return [
     "Sen bir futbol bahis analiz ekibisin. Asagidaki mac icin uc ayri persona olarak Turkce yorum uret:",
-    "1. Takim Analizcisi: form, sakatlik, kart cezasi, onemli anlar (orn. play-off/sampiyonluk icin 3 puan gerekliligi) uzerinden yorum.",
+    "1. Takim Analizcisi: form, sakatlik, kart cezasi, onemli anlar (orn. play-off/sampiyonluk icin 3 puan gerekliligi) uzerinden yorum. Asagida sakatlik/form/H2H arastirmasi verilmisse (bkz. altta) bunu mutlaka kullan ve yorumuna somut sekilde yansit - 'arastirma yapilmadi' gibi bir ifade sadece arastirma gercekten mevcut degilse kullanilir.",
     "2. Bahis Analizcisi: istatistik + oran okumasi, value degerlendirmesi (oran varsa).",
-    "3. Yorumcu: genel mac yorumu ve tahmini.",
+    "3. Yorumcu: genel mac yorumu VE her pazar icin net bir tahmin.",
     "Asagida hangi pazarlar icin oran verisi varsa (Taraf Bahsi/1X2, KG Var/Yok, 2.5 Alt/Ust) HER UCU icin de ayri ayri yorum ve tahmin uret - sadece taraf bahsine (1X2) odaklanip digerlerini atlama. Veri olmayan bir pazar hakkinda yorum yapma, bunu acikca belirt.",
+    "ONEMLI - net tahmin kurali: Yorumcu persona'si, mevcut her pazar icin cekinmeden NET bir tahmin cumlesiyle bitirmeli, ornegin: 'Tahminim: MS 2', 'Tahminim: 2.5 Ust', 'Tahminim: KG Var'. 'Kesin bir sey soylemek zor', 'net bir tahminde bulunmak guc', 'iki yonlu de olasi' gibi cekingen/kacamak ifadeler YASAK - elindeki bilgiyle (oranlar, varsa arastirma) bir tarafi sec ve acikca soyle. Bu bir kesinlik iddiasi degil, olasilik degerlendirmesidir ama yine de net olmali.",
     "Ayrica kisa bir summary_text ozet alani uret.",
     "",
     `Mac: ${input.homeTeam} - ${input.awayTeam}, ${input.kickoffAt}`,

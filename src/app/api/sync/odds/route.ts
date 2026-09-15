@@ -5,6 +5,7 @@ import { upsertMatches, type MatchUpsertRow } from "@/lib/db/matches";
 import { insertOddsSnapshots } from "@/lib/db/odds";
 import { getOddsForSport } from "@/lib/odds-api";
 import { isSyncRequestAuthorized } from "@/lib/sync-auth";
+import { DISPLAY_BOOKMAKERS } from "@/lib/display-bookmakers";
 
 export async function POST(request: NextRequest) {
   if (!isSyncRequestAuthorized(request)) {
@@ -41,6 +42,7 @@ export async function POST(request: NextRequest) {
 
       const matchIdByEventId = new Map(upserted.map((m) => [m.oddsApiEventId, m.id]));
       const oddsRows = quotes
+        .filter((quote) => DISPLAY_BOOKMAKERS.includes(quote.bookmaker))
         .map((quote) => {
           const matchId = matchIdByEventId.get(quote.eventId);
           if (!matchId) return null;

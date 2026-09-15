@@ -87,4 +87,16 @@ describe("buildAnalysisPrompt", () => {
     expect(prompt).toContain("Karsilikli Gol (KG Var/Yok)");
     expect(prompt).toContain("bunlar hakkinda yorum/tahmin yapma");
   });
+
+  it("demands a decisive 'Tahminim: ...' pick per market and forbids hedging language", () => {
+    const prompt = buildAnalysisPrompt(baseInput);
+    expect(prompt).toContain("Tahminim:");
+    expect(prompt).toContain("YASAK");
+    expect(prompt).toContain("net bir tahmin");
+  });
+
+  it("tells the team analyst persona to actually use the research content, not just acknowledge its absence", () => {
+    const prompt = buildAnalysisPrompt(baseInput);
+    expect(prompt).toContain("mutlaka kullan");
+  });
 });

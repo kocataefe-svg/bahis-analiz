@@ -1,10 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getSupabaseClient } from "@/lib/supabase";
-import { getMatchById } from "@/lib/db/matches";
+import { getSupabaseClient, type SupabaseClient } from "@/lib/supabase";
+import { getMatchById, type MatchDetail } from "@/lib/db/matches";
 import { getMatchResearch, insertMatchResearch } from "@/lib/db/match-research";
+import { getLatestOdds } from "@/lib/db/odds";
+import { insertAiAnalysis } from "@/lib/db/ai-analyses";
 import { researchMatchContext, RESEARCH_MODEL } from "@/lib/gemini-research";
+import { generateMatchAnalysis, GEMINI_MODEL } from "@/lib/gemini";
 
 export interface ResearchMatchState {
   error: string | null;
@@ -44,6 +47,41 @@ export async function researchMatch(matchId: string, _prevState: ResearchMatchSt
     return { error: "Arastirma kaydedilemedi, tekrar deneyin." };
   }
 
+  // Arastirma sonucu artik mevcut - kullanicinin ayni ziyarette guncel
+  // yorum gormesi icin AI analizini hemen bu veriyle yeniden uretiyoruz
+  // (gunluk cron'u beklemek yerine). Basarisiz olursa arastirma sonucu
+  // yine de kaydedilmis olur; analiz bir sonraki cron'da yenilenir.
+  await regenerateAnalysisWithResearch(supabase, match, result.content);
+
   revalidatePath("/matches/[id]", "page");
   return { error: null };
+}
+
+async function regenerateAnalysisWithResearch(
+  supabase: SupabaseClient,
+  match: MatchDetail,
+  researchContext: string,
+): Promise<void> {
+  try {
+    const odds = await getLatestOdds(supabase, match.id);
+    const analysis = await generateMatchAnalysis({
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+      kickoffAt: match.kickoffAt,
+      researchContext,
+      odds: odds.map((o) => ({ market: o.market, bookmaker: o.bookmaker, outcome: o.outcome, price: o.price })),
+    });
+    if (!analysis) return;
+
+    await insertAiAnalysis(supabase, {
+      match_id: match.id,
+      team_analyst_text: analysis.teamAnalystText,
+      betting_analyst_text: analysis.bettingAnalystText,
+      commentator_text: analysis.commentatorText,
+      summary_text: analysis.summaryText,
+      model_used: GEMINI_MODEL,
+    });
+  } catch (err) {
+    console.warn(`Arastirma sonrasi analiz yenileme basarisiz: match=${match.id} ->`, err);
+  }
 }

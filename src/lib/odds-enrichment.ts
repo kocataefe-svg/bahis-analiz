@@ -23,6 +23,10 @@ export async function ensureExtraMarketsOdds(
   if (missing.length === 0) return false;
 
   const quotes = await getEventOdds(sportKey, oddsApiEventId, missing.join(","));
+  // Bilerek bookmaker listesine gore filtrelemiyoruz: totals/btts zaten
+  // az sayida sitede mevcut oluyor (h2h gibi 15-20 site degil), tercih
+  // edilen siteler bu maci sunmazsa hic veri kalmaz ve her ziyarette
+  // bosuna tekrar API cagrisi + kredi harcanir.
   const relevant = quotes.filter((q) => q.market !== "totals" || q.point === TOTALS_POINT);
   if (relevant.length === 0) return false;
 

@@ -87,6 +87,50 @@ describe("POST /api/sync/odds", () => {
     expect(body).toEqual({ ok: true, totalMatchesUpserted: 1, totalOddsInserted: 2, failed: 0 });
   });
 
+  it("still creates the fixture from a non-whitelisted bookmaker's quote, but does not store its odds", async () => {
+    vi.mocked(getActiveLeagues).mockResolvedValue([{ id: "l1", oddsApiSportKey: "soccer_epl" }]);
+    vi.mocked(getOddsForSport).mockResolvedValue([
+      {
+        eventId: "evt1",
+        homeTeam: "Manchester City",
+        awayTeam: "Arsenal",
+        commenceTime: "2026-09-20T15:00:00Z",
+        bookmaker: "some_random_bookmaker",
+        market: "h2h",
+        outcome: "Arsenal",
+        price: 4.2,
+      },
+      {
+        eventId: "evt1",
+        homeTeam: "Manchester City",
+        awayTeam: "Arsenal",
+        commenceTime: "2026-09-20T15:00:00Z",
+        bookmaker: "pinnacle",
+        market: "h2h",
+        outcome: "Arsenal",
+        price: 4.1,
+      },
+    ]);
+    vi.mocked(upsertMatches).mockResolvedValue([{ id: "m1", oddsApiEventId: "evt1" }]);
+
+    const res = await POST(makeRequest("Bearer test-secret") as any);
+    const body = await res.json();
+
+    expect(upsertMatches).toHaveBeenCalledWith(expect.anything(), [
+      {
+        league_id: "l1",
+        odds_api_event_id: "evt1",
+        home_team: "Manchester City",
+        away_team: "Arsenal",
+        kickoff_at: "2026-09-20T15:00:00Z",
+      },
+    ]);
+    expect(insertOddsSnapshots).toHaveBeenCalledWith(expect.anything(), [
+      { match_id: "m1", market: "h2h", outcome: "Arsenal", bookmaker: "pinnacle", price: 4.1 },
+    ]);
+    expect(body).toEqual({ ok: true, totalMatchesUpserted: 1, totalOddsInserted: 1, failed: 0 });
+  });
+
   it("skips a league when getOddsForSport returns no quotes", async () => {
     vi.mocked(getActiveLeagues).mockResolvedValue([{ id: "l1", oddsApiSportKey: "soccer_epl" }]);
     vi.mocked(getOddsForSport).mockResolvedValue([]);
