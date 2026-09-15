@@ -87,7 +87,7 @@ describe("POST /api/sync/odds", () => {
     expect(body).toEqual({ ok: true, totalMatchesUpserted: 1, totalOddsInserted: 2, failed: 0 });
   });
 
-  it("still creates the fixture from a non-whitelisted bookmaker's quote, but does not store its odds", async () => {
+  it("still creates the fixture from any bookmaker's quote, but caps stored odds to at most 2 preferred sites per match", async () => {
     vi.mocked(getActiveLeagues).mockResolvedValue([{ id: "l1", oddsApiSportKey: "soccer_epl" }]);
     vi.mocked(getOddsForSport).mockResolvedValue([
       {
@@ -110,6 +110,16 @@ describe("POST /api/sync/odds", () => {
         outcome: "Arsenal",
         price: 4.1,
       },
+      {
+        eventId: "evt1",
+        homeTeam: "Manchester City",
+        awayTeam: "Arsenal",
+        commenceTime: "2026-09-20T15:00:00Z",
+        bookmaker: "unibet_nl",
+        market: "h2h",
+        outcome: "Arsenal",
+        price: 4.3,
+      },
     ]);
     vi.mocked(upsertMatches).mockResolvedValue([{ id: "m1", oddsApiEventId: "evt1" }]);
 
@@ -125,10 +135,14 @@ describe("POST /api/sync/odds", () => {
         kickoff_at: "2026-09-20T15:00:00Z",
       },
     ]);
+    // Uc site sunuyordu (some_random_bookmaker, pinnacle, unibet_nl); iki
+    // tercih edilen site (pinnacle, unibet_nl) var oldugundan MAX=2 sinirina
+    // gore sadece onlar saklanir, some_random_bookmaker elenir.
     expect(insertOddsSnapshots).toHaveBeenCalledWith(expect.anything(), [
       { match_id: "m1", market: "h2h", outcome: "Arsenal", bookmaker: "pinnacle", price: 4.1 },
+      { match_id: "m1", market: "h2h", outcome: "Arsenal", bookmaker: "unibet_nl", price: 4.3 },
     ]);
-    expect(body).toEqual({ ok: true, totalMatchesUpserted: 1, totalOddsInserted: 1, failed: 0 });
+    expect(body).toEqual({ ok: true, totalMatchesUpserted: 1, totalOddsInserted: 2, failed: 0 });
   });
 
   it("skips a league when getOddsForSport returns no quotes", async () => {

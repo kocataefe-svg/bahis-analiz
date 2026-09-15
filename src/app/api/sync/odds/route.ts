@@ -5,7 +5,7 @@ import { upsertMatches, type MatchUpsertRow } from "@/lib/db/matches";
 import { insertOddsSnapshots } from "@/lib/db/odds";
 import { getOddsForSport } from "@/lib/odds-api";
 import { isSyncRequestAuthorized } from "@/lib/sync-auth";
-import { DISPLAY_BOOKMAKERS } from "@/lib/display-bookmakers";
+import { limitBookmakersPerMarket } from "@/lib/display-bookmakers";
 
 export async function POST(request: NextRequest) {
   if (!isSyncRequestAuthorized(request)) {
@@ -41,8 +41,10 @@ export async function POST(request: NextRequest) {
       totalMatchesUpserted += upserted.length;
 
       const matchIdByEventId = new Map(upserted.map((m) => [m.oddsApiEventId, m.id]));
-      const oddsRows = quotes
-        .filter((quote) => DISPLAY_BOOKMAKERS.includes(quote.bookmaker))
+      // Fikstur olusturma TUM quotes'u kullanir (hangi bookmaker'da olursa
+      // olsun bir mac varsa eklenmeli); oran kaydinda ise her maca ozel
+      // pazar bazinda en fazla iki siteye indirgenir.
+      const oddsRows = limitBookmakersPerMarket(quotes)
         .map((quote) => {
           const matchId = matchIdByEventId.get(quote.eventId);
           if (!matchId) return null;

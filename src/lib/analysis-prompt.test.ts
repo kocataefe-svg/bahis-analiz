@@ -95,6 +95,12 @@ describe("buildAnalysisPrompt", () => {
     expect(prompt).toContain("net bir tahmin");
   });
 
+  it("allows (but does not require) an optional combined two-pick suggestion", () => {
+    const prompt = buildAnalysisPrompt(baseInput);
+    expect(prompt).toContain("Kombine onerim");
+    expect(prompt).toContain("opsiyoneldir");
+  });
+
   it("tells the team analyst persona to actually use the research content, not just acknowledge its absence", () => {
     const prompt = buildAnalysisPrompt(baseInput);
     expect(prompt).toContain("mutlaka kullan");

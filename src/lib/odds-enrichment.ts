@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getEventOdds } from "./odds-api";
 import { insertOddsSnapshots } from "./db/odds";
+import { limitBookmakersPerMarket } from "./display-bookmakers";
 
 const EXTRA_MARKETS = ["totals", "btts"] as const;
 const TOTALS_POINT = 2.5;
@@ -23,11 +24,11 @@ export async function ensureExtraMarketsOdds(
   if (missing.length === 0) return false;
 
   const quotes = await getEventOdds(sportKey, oddsApiEventId, missing.join(","));
-  // Bilerek bookmaker listesine gore filtrelemiyoruz: totals/btts zaten
-  // az sayida sitede mevcut oluyor (h2h gibi 15-20 site degil), tercih
-  // edilen siteler bu maci sunmazsa hic veri kalmaz ve her ziyarette
-  // bosuna tekrar API cagrisi + kredi harcanir.
-  const relevant = quotes.filter((q) => q.market !== "totals" || q.point === TOTALS_POINT);
+  const withCorrectPoint = quotes.filter((q) => q.market !== "totals" || q.point === TOTALS_POINT);
+  // limitBookmakersPerMarket tercih edilen siteleri dener, o pazarda hicbiri
+  // yoksa mevcut herhangi bir siteye duser - bu yuzden bir pazar asla
+  // tamamen bos kalip her ziyarette tekrar API cagrisina yol acmaz.
+  const relevant = limitBookmakersPerMarket(withCorrectPoint);
   if (relevant.length === 0) return false;
 
   await insertOddsSnapshots(
