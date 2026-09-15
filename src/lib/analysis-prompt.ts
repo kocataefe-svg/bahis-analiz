@@ -23,12 +23,16 @@ function formatResearchContext(researchContext: string | null): string {
 }
 
 function formatOdds(odds: OddsForPrompt[]): string {
-  if (odds.length === 0) {
+  // Odds API bazi bookmaker'lar (orn. Betfair borsasi) icin h2h_lay gibi
+  // bilmedigimiz ek market anahtarlari dondurebiliyor - sadece bildigimiz
+  // (yorum yapmasi istenen) pazarlar prompt'a girsin.
+  const knownOdds = odds.filter((o) => o.market in MARKET_LABELS);
+  if (knownOdds.length === 0) {
     return "Oran verisi mevcut degil. Oran bazli yorum (value bet vs.) yapma, sadece takim/istatistik yorumuna odaklan.";
   }
 
   const byMarket = new Map<string, OddsForPrompt[]>();
-  for (const o of odds) {
+  for (const o of knownOdds) {
     if (!byMarket.has(o.market)) byMarket.set(o.market, []);
     byMarket.get(o.market)!.push(o);
   }

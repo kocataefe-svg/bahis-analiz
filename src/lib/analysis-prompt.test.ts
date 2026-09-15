@@ -68,6 +68,16 @@ describe("buildAnalysisPrompt", () => {
     expect(prompt).toContain("HER UCU icin de ayri ayri yorum");
   });
 
+  it("ignores odds from unknown market keys (e.g. Betfair exchange h2h_lay)", () => {
+    const prompt = buildAnalysisPrompt({
+      ...baseInput,
+      odds: [{ market: "h2h_lay", bookmaker: "betfair_ex_eu", outcome: "Arsenal", price: 4.5 }],
+    });
+    expect(prompt).not.toContain("h2h_lay");
+    expect(prompt).not.toContain("betfair_ex_eu");
+    expect(prompt).toContain("Oran verisi mevcut degil");
+  });
+
   it("tells the model not to comment on markets that have no odds data", () => {
     const prompt = buildAnalysisPrompt({
       ...baseInput,

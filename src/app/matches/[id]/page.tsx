@@ -53,8 +53,12 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
   }
 
   const h2hOdds = latestOdds.filter((o) => o.market === "h2h");
+  // Odds API bazi bookmaker'lar (orn. Betfair borsasi) icin istenmeyen ek
+  // market anahtarlari (h2h_lay gibi) dondurebiliyor - sadece bildigimiz
+  // pazarlari goster.
   const oddsByMarket = new Map<string, typeof latestOdds>();
   for (const o of latestOdds) {
+    if (!(o.market in MARKET_LABELS)) continue;
     if (!oddsByMarket.has(o.market)) oddsByMarket.set(o.market, []);
     oddsByMarket.get(o.market)!.push(o);
   }
