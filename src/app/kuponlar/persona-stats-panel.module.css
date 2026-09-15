@@ -37,6 +37,22 @@
   color: var(--text);
 }
 
+.row:nth-child(1) .name {
+  color: var(--accent);
+}
+
+.row:nth-child(2) .name {
+  color: var(--odds);
+}
+
+.row:nth-child(3) .name {
+  color: var(--persona-commentator);
+}
+
+.row:nth-child(4) .name {
+  color: var(--highlight);
+}
+
 .rate {
   color: var(--text-dim);
   font-family: var(--font-display), sans-serif;

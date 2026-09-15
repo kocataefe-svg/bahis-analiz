@@ -115,23 +115,45 @@
 .personaCard {
   position: relative;
   padding-bottom: 26px;
+  padding-left: 12px;
+  border-left: 3px solid var(--border);
   animation: fade-slide-up var(--duration-base) var(--ease-out) both;
 }
 
 .personaCard:nth-of-type(1) {
   animation-delay: 0ms;
+  border-left-color: var(--accent);
+}
+
+.personaCard:nth-of-type(1) h3 {
+  color: var(--accent);
 }
 
 .personaCard:nth-of-type(2) {
   animation-delay: 60ms;
+  border-left-color: var(--odds);
+}
+
+.personaCard:nth-of-type(2) h3 {
+  color: var(--odds);
 }
 
 .personaCard:nth-of-type(3) {
   animation-delay: 120ms;
+  border-left-color: var(--persona-commentator);
+}
+
+.personaCard:nth-of-type(3) h3 {
+  color: var(--persona-commentator);
 }
 
 .personaCard:nth-of-type(4) {
   animation-delay: 180ms;
+  border-left-color: var(--highlight);
+}
+
+.personaCard:nth-of-type(4) h3 {
+  color: var(--highlight);
 }
 
 .summary {
