@@ -10,6 +10,16 @@ export function formatKickoffTime(iso: string): string {
   }).format(new Date(iso));
 }
 
+export function formatShortDateTime(iso: string): string {
+  return new Intl.DateTimeFormat("tr-TR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/Istanbul",
+  }).format(new Date(iso));
+}
+
 export function formatRelativeUpdate(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));

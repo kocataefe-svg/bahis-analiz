@@ -55,9 +55,11 @@ describe("getUpcomingMatches", () => {
       data: [
         {
           id: "m1",
+          league_id: "l1",
           home_team: "A",
           away_team: "B",
           kickoff_at: "2026-09-20T15:00:00Z",
+          odds_api_event_id: "evt1",
         },
       ],
       error: null,
@@ -75,9 +77,11 @@ describe("getUpcomingMatches", () => {
     expect(result).toEqual([
       {
         id: "m1",
+        leagueId: "l1",
         homeTeam: "A",
         awayTeam: "B",
         kickoffAt: "2026-09-20T15:00:00Z",
+        oddsApiEventId: "evt1",
       },
     ]);
   });

@@ -7,6 +7,7 @@ export interface MatchAnalysisResult {
   teamAnalystText: string;
   bettingAnalystText: string;
   commentatorText: string;
+  surprisePickText: string;
   summaryText: string;
 }
 
@@ -14,6 +15,7 @@ interface RawAnalysisJson {
   team_analyst_text?: string;
   betting_analyst_text?: string;
   commentator_text?: string;
+  surprise_pick_text?: string;
   summary_text?: string;
 }
 
@@ -28,7 +30,7 @@ function getApiKey(): string {
 const JSON_FORMAT_INSTRUCTION = [
   "",
   "Yanitini SADECE gecerli bir JSON nesnesi olarak ver, baska hicbir metin ekleme (aciklama, markdown code fence vb. yok).",
-  "JSON tam olarak su alanlari icermeli: team_analyst_text, betting_analyst_text, commentator_text, summary_text (hepsi string).",
+  "JSON tam olarak su alanlari icermeli: team_analyst_text, betting_analyst_text, commentator_text, surprise_pick_text, summary_text (hepsi string).",
 ].join("\n");
 
 export async function generateMatchAnalysis(input: AnalysisPromptInput): Promise<MatchAnalysisResult | null> {
@@ -52,7 +54,7 @@ export async function generateMatchAnalysis(input: AnalysisPromptInput): Promise
         // (canli testte gorulen bir hata). Dusuk reasoning + genis token payi
         // bu riski ortadan kaldirir - gorev zaten derin akil yurutme gerektirmiyor.
         reasoning_effort: "low",
-        max_completion_tokens: 3000,
+        max_completion_tokens: 3500,
       }),
     });
 
@@ -85,6 +87,7 @@ export async function generateMatchAnalysis(input: AnalysisPromptInput): Promise
     !parsed.team_analyst_text ||
     !parsed.betting_analyst_text ||
     !parsed.commentator_text ||
+    !parsed.surprise_pick_text ||
     !parsed.summary_text
   ) {
     console.warn("Groq yaniti eksik alan iceriyor");
@@ -95,6 +98,7 @@ export async function generateMatchAnalysis(input: AnalysisPromptInput): Promise
     teamAnalystText: parsed.team_analyst_text,
     bettingAnalystText: parsed.betting_analyst_text,
     commentatorText: parsed.commentator_text,
+    surprisePickText: parsed.surprise_pick_text,
     summaryText: parsed.summary_text,
   };
 }

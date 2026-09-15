@@ -34,9 +34,11 @@ export async function upsertMatches(supabase: SupabaseClient, rows: MatchUpsertR
 
 export interface SyncMatch {
   id: string;
+  leagueId: string;
   homeTeam: string;
   awayTeam: string;
   kickoffAt: string;
+  oddsApiEventId: string;
 }
 
 export async function getUpcomingMatches(
@@ -49,7 +51,7 @@ export async function getUpcomingMatches(
 
   const { data, error } = await supabase
     .from("matches")
-    .select("id, home_team, away_team, kickoff_at")
+    .select("id, league_id, home_team, away_team, kickoff_at, odds_api_event_id")
     .gte("kickoff_at", nowIso)
     .lte("kickoff_at", untilIso)
     .order("kickoff_at", { ascending: true })
@@ -59,16 +61,20 @@ export async function getUpcomingMatches(
 
   interface RawMatchRow {
     id: string;
+    league_id: string;
     home_team: string;
     away_team: string;
     kickoff_at: string;
+    odds_api_event_id: string;
   }
 
   return ((data ?? []) as RawMatchRow[]).map((row) => ({
     id: row.id,
+    leagueId: row.league_id,
     homeTeam: row.home_team,
     awayTeam: row.away_team,
     kickoffAt: row.kickoff_at,
+    oddsApiEventId: row.odds_api_event_id,
   }));
 }
 

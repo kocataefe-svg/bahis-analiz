@@ -58,9 +58,22 @@
 .chartLegend {
   list-style: none;
   display: flex;
-  gap: 12px;
+  flex-direction: column;
+  gap: 4px;
   font-size: 12px;
   margin-top: 4px;
+}
+
+.chartAxisLabel {
+  font-size: 8px;
+  fill: currentColor;
+  opacity: 0.6;
+}
+
+.chartGridLine {
+  stroke: currentColor;
+  stroke-opacity: 0.1;
+  stroke-width: 1;
 }
 
 .analysis {

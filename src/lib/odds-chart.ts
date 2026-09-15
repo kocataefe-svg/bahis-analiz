@@ -8,6 +8,8 @@ export interface OddsHistoryPoint {
 export interface ChartPoint {
   x: number;
   y: number;
+  price: number;
+  fetchedAt: string;
 }
 
 export interface ChartSeries {
@@ -28,6 +30,17 @@ export function averagePricesByOutcome(quotes: { outcome: string; price: number 
     result.set(outcome, total / count);
   }
   return result;
+}
+
+export interface PriceBounds {
+  min: number;
+  max: number;
+}
+
+export function getPriceBounds(history: OddsHistoryPoint[]): PriceBounds | null {
+  if (history.length === 0) return null;
+  const prices = history.map((h) => h.price);
+  return { min: Math.min(...prices), max: Math.max(...prices) };
 }
 
 export function buildOddsChartSeries(history: OddsHistoryPoint[], width = 300, height = 100): ChartSeries[] {
@@ -58,7 +71,7 @@ export function buildOddsChartSeries(history: OddsHistoryPoint[], width = 300, h
       const timeIndex = allTimestamps.indexOf(ts);
       const x = allTimestamps.length > 1 ? (timeIndex / (allTimestamps.length - 1)) * width : width / 2;
       const y = height - ((avg - minPrice) / priceRange) * height;
-      return { x, y };
+      return { x, y, price: avg, fetchedAt: ts };
     });
     series.push({ outcome, points });
   }

@@ -3,8 +3,10 @@ import { getSupabaseClient } from "@/lib/supabase";
 import { getUpcomingMatches } from "@/lib/db/matches";
 import { getLatestOdds } from "@/lib/db/odds";
 import { getMatchResearch } from "@/lib/db/match-research";
+import { getActiveLeagues } from "@/lib/db/leagues";
 import { getLatestAnalysisGeneratedAt, needsFreshAnalysis, insertAiAnalysis } from "@/lib/db/ai-analyses";
 import { generateMatchAnalysis, GROQ_MODEL } from "@/lib/groq";
+import { ensureExtraMarketsOdds } from "@/lib/odds-enrichment";
 import { isSyncRequestAuthorized } from "@/lib/sync-auth";
 
 export const maxDuration = 60;
@@ -18,7 +20,11 @@ export async function POST(request: NextRequest) {
   }
 
   const supabase = getSupabaseClient();
-  const matches = await getUpcomingMatches(supabase, ANALYSIS_SYNC_WINDOW_DAYS, MAX_MATCHES_PER_RUN);
+  const [matches, leagues] = await Promise.all([
+    getUpcomingMatches(supabase, ANALYSIS_SYNC_WINDOW_DAYS, MAX_MATCHES_PER_RUN),
+    getActiveLeagues(supabase),
+  ]);
+  const sportKeyByLeagueId = new Map(leagues.map((l) => [l.id, l.oddsApiSportKey]));
 
   let generated = 0;
   let skipped = 0;
@@ -26,8 +32,28 @@ export async function POST(request: NextRequest) {
 
   for (const match of matches) {
     try {
-      const [odds, latestAnalysisAt, research] = await Promise.all([
-        getLatestOdds(supabase, match.id),
+      let odds = await getLatestOdds(supabase, match.id);
+
+      // Yorumcularin KG/2.5 hakkinda "veri yok" demek zorunda kalmamasi icin,
+      // analiz uretmeden once bu macin eksik pazarlarini (varsa) tek seferlik
+      // tamamlamaya calis - zaten kalici cache'lendigi icin ayni maca tekrar
+      // API cagrisi yapilmaz.
+      const sportKey = sportKeyByLeagueId.get(match.leagueId);
+      if (sportKey) {
+        const existingMarkets = new Set(odds.map((o) => o.market));
+        const insertedNew = await ensureExtraMarketsOdds(
+          supabase,
+          match.id,
+          match.oddsApiEventId,
+          sportKey,
+          existingMarkets,
+        );
+        if (insertedNew) {
+          odds = await getLatestOdds(supabase, match.id);
+        }
+      }
+
+      const [latestAnalysisAt, research] = await Promise.all([
         getLatestAnalysisGeneratedAt(supabase, match.id),
         getMatchResearch(supabase, match.id),
       ]);
@@ -57,6 +83,7 @@ export async function POST(request: NextRequest) {
         team_analyst_text: result.teamAnalystText,
         betting_analyst_text: result.bettingAnalystText,
         commentator_text: result.commentatorText,
+        surprise_pick_text: result.surprisePickText,
         summary_text: result.summaryText,
         model_used: GROQ_MODEL,
       });

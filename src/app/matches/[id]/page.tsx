@@ -155,6 +155,10 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
               <h3>Yorumcu</h3>
               <p>{analysis.commentatorText}</p>
             </div>
+            <div>
+              <h3>Surpriz Yorumcu</h3>
+              <p>{analysis.surprisePickText}</p>
+            </div>
           </div>
         )}
       </section>

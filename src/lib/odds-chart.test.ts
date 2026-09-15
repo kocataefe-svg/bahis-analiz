@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildOddsChartSeries, averagePricesByOutcome } from "./odds-chart";
+import { buildOddsChartSeries, averagePricesByOutcome, getPriceBounds } from "./odds-chart";
 
 describe("averagePricesByOutcome", () => {
   it("averages prices across bookmakers for the same outcome", () => {
@@ -71,5 +71,29 @@ describe("buildOddsChartSeries", () => {
     );
     expect(series[0].points[0].y).toBe(100);
     expect(series[0].points[1].y).toBe(0);
+  });
+
+  it("carries the raw averaged price and fetchedAt on each point (for axis/legend labels)", () => {
+    const series = buildOddsChartSeries([
+      { fetchedAt: "2026-09-12T12:00:00Z", outcome: "Arsenal", bookmaker: "pinnacle", price: 1.8 },
+      { fetchedAt: "2026-09-12T12:00:00Z", outcome: "Arsenal", bookmaker: "bet365", price: 2.0 },
+    ]);
+    expect(series[0].points[0].price).toBe(1.9);
+    expect(series[0].points[0].fetchedAt).toBe("2026-09-12T12:00:00Z");
+  });
+});
+
+describe("getPriceBounds", () => {
+  it("returns null for no history", () => {
+    expect(getPriceBounds([])).toBeNull();
+  });
+
+  it("returns the min and max price across all points", () => {
+    const bounds = getPriceBounds([
+      { fetchedAt: "2026-09-12T12:00:00Z", outcome: "Arsenal", bookmaker: "pinnacle", price: 1.5 },
+      { fetchedAt: "2026-09-13T12:00:00Z", outcome: "Draw", bookmaker: "pinnacle", price: 3.5 },
+      { fetchedAt: "2026-09-13T12:00:00Z", outcome: "Chelsea", bookmaker: "pinnacle", price: 4.2 },
+    ]);
+    expect(bounds).toEqual({ min: 1.5, max: 4.2 });
   });
 });

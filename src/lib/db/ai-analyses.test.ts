@@ -10,8 +10,9 @@ describe("insertAiAnalysis", () => {
       team_analyst_text: "a",
       betting_analyst_text: "b",
       commentator_text: "c",
+      surprise_pick_text: "e",
       summary_text: "d",
-      model_used: "gemini-3.5-flash-lite",
+      model_used: "openai/gpt-oss-20b",
     };
 
     await insertAiAnalysis({ from } as any, row);
@@ -29,8 +30,9 @@ describe("insertAiAnalysis", () => {
         team_analyst_text: "a",
         betting_analyst_text: "b",
         commentator_text: "c",
+        surprise_pick_text: "e",
         summary_text: "d",
-        model_used: "gemini-3.5-flash-lite",
+        model_used: "openai/gpt-oss-20b",
       }),
     ).rejects.toThrow("boom");
   });
@@ -97,8 +99,9 @@ describe("getLatestAnalysis", () => {
           team_analyst_text: "takim analizi",
           betting_analyst_text: "bahis analizi",
           commentator_text: "yorum",
+          surprise_pick_text: "surpriz tahmin",
           summary_text: "ozet",
-          model_used: "gemini-3.5-flash-lite",
+          model_used: "openai/gpt-oss-20b",
           generated_at: "2026-09-13T10:00:00Z",
         },
       ],
@@ -117,8 +120,9 @@ describe("getLatestAnalysis", () => {
       teamAnalystText: "takim analizi",
       bettingAnalystText: "bahis analizi",
       commentatorText: "yorum",
+      surprisePickText: "surpriz tahmin",
       summaryText: "ozet",
-      modelUsed: "gemini-3.5-flash-lite",
+      modelUsed: "openai/gpt-oss-20b",
       generatedAt: "2026-09-13T10:00:00Z",
     });
   });

@@ -21,6 +21,7 @@ function validAnalysisContent() {
     team_analyst_text: "takim analizi",
     betting_analyst_text: "bahis analizi",
     commentator_text: "yorum",
+    surprise_pick_text: "surpriz tahmin",
     summary_text: "ozet",
   });
 }
@@ -58,6 +59,7 @@ describe("generateMatchAnalysis", () => {
       teamAnalystText: "takim analizi",
       bettingAnalystText: "bahis analizi",
       commentatorText: "yorum",
+      surprisePickText: "surpriz tahmin",
       summaryText: "ozet",
     });
   });

@@ -78,6 +78,7 @@ async function regenerateAnalysisWithResearch(
       team_analyst_text: analysis.teamAnalystText,
       betting_analyst_text: analysis.bettingAnalystText,
       commentator_text: analysis.commentatorText,
+      surprise_pick_text: analysis.surprisePickText,
       summary_text: analysis.summaryText,
       model_used: GROQ_MODEL,
     });

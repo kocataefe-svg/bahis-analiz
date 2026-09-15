@@ -5,6 +5,7 @@ export interface AiAnalysisInsertRow {
   team_analyst_text: string;
   betting_analyst_text: string;
   commentator_text: string;
+  surprise_pick_text: string;
   summary_text: string;
   model_used: string;
 }
@@ -38,6 +39,7 @@ export interface LatestAnalysis {
   teamAnalystText: string;
   bettingAnalystText: string;
   commentatorText: string;
+  surprisePickText: string;
   summaryText: string;
   modelUsed: string;
   generatedAt: string;
@@ -46,7 +48,9 @@ export interface LatestAnalysis {
 export async function getLatestAnalysis(supabase: SupabaseClient, matchId: string): Promise<LatestAnalysis | null> {
   const { data, error } = await supabase
     .from("ai_analyses")
-    .select("team_analyst_text, betting_analyst_text, commentator_text, summary_text, model_used, generated_at")
+    .select(
+      "team_analyst_text, betting_analyst_text, commentator_text, surprise_pick_text, summary_text, model_used, generated_at",
+    )
     .eq("match_id", matchId)
     .order("generated_at", { ascending: false })
     .limit(1);
@@ -57,6 +61,7 @@ export async function getLatestAnalysis(supabase: SupabaseClient, matchId: strin
     team_analyst_text: string;
     betting_analyst_text: string;
     commentator_text: string;
+    surprise_pick_text: string;
     summary_text: string;
     model_used: string;
     generated_at: string;
@@ -70,6 +75,7 @@ export async function getLatestAnalysis(supabase: SupabaseClient, matchId: strin
     teamAnalystText: row.team_analyst_text,
     bettingAnalystText: row.betting_analyst_text,
     commentatorText: row.commentator_text,
+    surprisePickText: row.surprise_pick_text,
     summaryText: row.summary_text,
     modelUsed: row.model_used,
     generatedAt: row.generated_at,
