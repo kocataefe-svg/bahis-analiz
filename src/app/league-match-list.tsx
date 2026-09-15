@@ -4,8 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import type { DisplayLeague } from "@/lib/db/leagues";
 import type { DisplayMatch } from "@/lib/db/matches";
-import { formatKickoffTime } from "@/lib/format";
+import { formatDayHeading, formatTimeOnly } from "@/lib/format";
 import styles from "./league-match-list.module.css";
+
+function dayKey(iso: string): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" }).format(new Date(iso));
+}
 
 export function LeagueMatchList({ leagues, matches }: { leagues: DisplayLeague[]; matches: DisplayMatch[] }) {
   const [selectedLeagueIds, setSelectedLeagueIds] = useState<Set<string>>(() => new Set(leagues.map((l) => l.id)));
@@ -19,11 +23,17 @@ export function LeagueMatchList({ leagues, matches }: { leagues: DisplayLeague[]
     });
   }
 
-  const matchesByLeague = new Map<string, DisplayMatch[]>();
+  const leagueById = new Map(leagues.map((l) => [l.id, l]));
+
+  // matches gelirken kickoff_at'e gore artan sirada geldigi icin (bkz.
+  // getUpcomingMatchesWithLeague) Map'e ekleme sirasi da kronolojik oluyor -
+  // ayrica bir sort gerekmiyor.
+  const matchesByDay = new Map<string, DisplayMatch[]>();
   for (const match of matches) {
     if (!selectedLeagueIds.has(match.leagueId)) continue;
-    if (!matchesByLeague.has(match.leagueId)) matchesByLeague.set(match.leagueId, []);
-    matchesByLeague.get(match.leagueId)!.push(match);
+    const key = dayKey(match.kickoffAt);
+    if (!matchesByDay.has(key)) matchesByDay.set(key, []);
+    matchesByDay.get(key)!.push(match);
   }
 
   return (
@@ -43,30 +53,30 @@ export function LeagueMatchList({ leagues, matches }: { leagues: DisplayLeague[]
       </fieldset>
 
       <div className={styles.matchList}>
-        {leagues.map((league) => {
-          const leagueMatches = matchesByLeague.get(league.id);
-          if (!leagueMatches || leagueMatches.length === 0) return null;
-          return (
-            <section key={league.id} className={styles.leagueSection}>
-              <h2 className={styles.leagueName}>
-                {league.name} <span className={styles.leagueCountry}>({league.country})</span>
-              </h2>
-              <ul className={styles.matches}>
-                {leagueMatches.map((match) => (
+        {[...matchesByDay.entries()].map(([day, dayMatches]) => (
+          <section key={day} className={styles.daySection}>
+            <h2 className={styles.dayHeading}>{formatDayHeading(dayMatches[0].kickoffAt)}</h2>
+            <ul className={styles.matches}>
+              {dayMatches.map((match) => {
+                const league = leagueById.get(match.leagueId);
+                return (
                   <li key={match.id}>
                     <Link href={`/matches/${match.id}`} className={styles.matchLink}>
-                      <span className={styles.teams}>
-                        {match.homeTeam} - {match.awayTeam}
+                      <span className={styles.matchInfo}>
+                        {league && <span className={styles.leagueTag}>{league.name}</span>}
+                        <span className={styles.teams}>
+                          {match.homeTeam} - {match.awayTeam}
+                        </span>
                       </span>
-                      <span className={styles.kickoff}>{formatKickoffTime(match.kickoffAt)}</span>
+                      <span className={styles.kickoff}>{formatTimeOnly(match.kickoffAt)}</span>
                     </Link>
                   </li>
-                ))}
-              </ul>
-            </section>
-          );
-        })}
-        {matchesByLeague.size === 0 && <p className={styles.empty}>Secili liglerde yaklasan mac yok.</p>}
+                );
+              })}
+            </ul>
+          </section>
+        ))}
+        {matchesByDay.size === 0 && <p className={styles.empty}>Secili liglerde yaklasan mac yok.</p>}
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ import { generateFullAnalysis } from "@/lib/analysis-orchestrator";
 
 export interface ResearchMatchState {
   error: string | null;
+  quotaExhausted: boolean;
 }
 
 export async function researchMatch(matchId: string, _prevState: ResearchMatchState): Promise<ResearchMatchState> {
@@ -18,12 +19,12 @@ export async function researchMatch(matchId: string, _prevState: ResearchMatchSt
 
   const existing = await getMatchResearch(supabase, matchId);
   if (existing) {
-    return { error: null };
+    return { error: null, quotaExhausted: false };
   }
 
   const match = await getMatchById(supabase, matchId);
   if (!match) {
-    return { error: "Mac bulunamadi." };
+    return { error: "Mac bulunamadi.", quotaExhausted: false };
   }
 
   const result = await researchMatchContext({
@@ -32,8 +33,11 @@ export async function researchMatch(matchId: string, _prevState: ResearchMatchSt
     kickoffAt: match.kickoffAt,
   });
 
-  if (!result) {
-    return { error: "Arastirma basarisiz, tekrar deneyin." };
+  if ("reason" in result) {
+    if (result.reason === "quota") {
+      return { error: "Gunluk arama kotasi doldu, birkac saat sonra tekrar deneyin.", quotaExhausted: true };
+    }
+    return { error: "Arastirma basarisiz, tekrar deneyin.", quotaExhausted: false };
   }
 
   try {
@@ -44,7 +48,7 @@ export async function researchMatch(matchId: string, _prevState: ResearchMatchSt
       model_used: RESEARCH_MODEL,
     });
   } catch {
-    return { error: "Arastirma kaydedilemedi, tekrar deneyin." };
+    return { error: "Arastirma kaydedilemedi, tekrar deneyin.", quotaExhausted: false };
   }
 
   // Arastirma sonucu artik mevcut - kullanicinin ayni ziyarette guncel
@@ -54,7 +58,7 @@ export async function researchMatch(matchId: string, _prevState: ResearchMatchSt
   await regenerateAnalysisWithResearch(supabase, match, result.content);
 
   revalidatePath("/matches/[id]", "page");
-  return { error: null };
+  return { error: null, quotaExhausted: false };
 }
 
 async function regenerateAnalysisWithResearch(

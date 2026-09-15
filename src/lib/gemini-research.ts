@@ -18,6 +18,19 @@ export interface ResearchMatchInput {
   kickoffAt: string;
 }
 
+export type ResearchFailureReason = "quota" | "unknown";
+
+export interface ResearchFailure {
+  reason: ResearchFailureReason;
+}
+
+function isQuotaExhaustedError(err: unknown): boolean {
+  const status = (err as { status?: number } | undefined)?.status;
+  if (status === 429) return true;
+  const message = err instanceof Error ? err.message : String(err);
+  return message.includes("RESOURCE_EXHAUSTED") || message.includes('"code":429');
+}
+
 function getApiKey(): string {
   const key = process.env.GEMINI_API_KEY;
   if (!key) {
@@ -37,7 +50,9 @@ function buildResearchPrompt(input: ResearchMatchInput): string {
   ].join("\n");
 }
 
-export async function researchMatchContext(input: ResearchMatchInput): Promise<MatchResearchResult | null> {
+export async function researchMatchContext(
+  input: ResearchMatchInput,
+): Promise<MatchResearchResult | ResearchFailure> {
   const apiKey = getApiKey();
 
   try {
@@ -53,7 +68,7 @@ export async function researchMatchContext(input: ResearchMatchInput): Promise<M
     const text = response.text;
     if (!text) {
       console.warn("Gemini arastirma yaniti bos");
-      return null;
+      return { reason: "unknown" };
     }
 
     const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
@@ -64,6 +79,6 @@ export async function researchMatchContext(input: ResearchMatchInput): Promise<M
     return { content: text, sources };
   } catch (err) {
     console.warn("Gemini arastirmasi basarisiz:", err);
-    return null;
+    return { reason: isQuotaExhaustedError(err) ? "quota" : "unknown" };
   }
 }

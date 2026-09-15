@@ -93,6 +93,19 @@ describe("buildTeamAndCommentaryPrompt (Groq: Takim Analizcisi + Yorumcu)", () =
     expect(prompt).toContain("opsiyoneldir");
   });
 
+  it("tells Yorumcu to actually reference optional markets instead of naming only the other prompt's personas", () => {
+    const prompt = buildTeamAndCommentaryPrompt({
+      ...baseInput,
+      odds: [
+        { market: "h2h", bookmaker: "pinnacle", outcome: "Arsenal", price: 1.8 },
+        { market: "totals_h1", bookmaker: "pinnacle", outcome: "Over 1.5", price: 2.0 },
+      ],
+    });
+    expect(prompt).not.toContain("Bahis Analizcisi");
+    expect(prompt).not.toContain("Surpriz Yorumcu");
+    expect(prompt).toContain("bu verileri tamamen atlamak YASAK");
+  });
+
   it("demands a decisive 'Tahminim: ...' pick per market and forbids hedging language", () => {
     const prompt = buildTeamAndCommentaryPrompt(baseInput);
     expect(prompt).toContain("Tahminim:");
@@ -148,5 +161,11 @@ describe("buildBettingAndSurprisePrompt (Gemini: Bahis Analizcisi + Surpriz Yoru
   it("forbids fabricated numeric stats here too", () => {
     const prompt = buildBettingAndSurprisePrompt(baseInput);
     expect(prompt).toContain("ASLA SAYI UYDURMA");
+  });
+
+  it("forbids inventing an exact scoreline and requires labeling first-half vs full-time legs in a combo", () => {
+    const prompt = buildBettingAndSurprisePrompt(baseInput);
+    expect(prompt).toContain("KESIN SKOR");
+    expect(prompt).toContain("Ilk yari: ...");
   });
 });

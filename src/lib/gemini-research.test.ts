@@ -54,16 +54,26 @@ describe("researchMatchContext", () => {
     expect(result).toEqual({ content: "sonuc", sources: [] });
   });
 
-  it("returns null when the response has no text", async () => {
+  it("returns an unknown failure when the response has no text", async () => {
     mockGenerateContent.mockResolvedValue({ text: "", candidates: [] });
     const result = await researchMatchContext(minimalInput);
-    expect(result).toBeNull();
+    expect(result).toEqual({ reason: "unknown" });
   });
 
-  it("returns null when the SDK call throws", async () => {
-    mockGenerateContent.mockRejectedValue(new Error("rate limited"));
+  it("returns an unknown failure when the SDK call throws a non-quota error", async () => {
+    mockGenerateContent.mockRejectedValue(new Error("network down"));
     const result = await researchMatchContext(minimalInput);
-    expect(result).toBeNull();
+    expect(result).toEqual({ reason: "unknown" });
+  });
+
+  it("returns a quota failure when the SDK throws a 429 RESOURCE_EXHAUSTED error", async () => {
+    const quotaError = Object.assign(
+      new Error('{"error":{"code":429,"message":"quota exceeded","status":"RESOURCE_EXHAUSTED"}}'),
+      { status: 429 },
+    );
+    mockGenerateContent.mockRejectedValue(quotaError);
+    const result = await researchMatchContext(minimalInput);
+    expect(result).toEqual({ reason: "quota" });
   });
 
   it("throws when GEMINI_API_KEY is not set", async () => {

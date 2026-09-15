@@ -24,3 +24,19 @@
   color: #dc2626;
   font-size: 13px;
 }
+
+.quotaBanner {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  max-width: 280px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #f59e0b;
+  font-size: 12px;
+  line-height: 1.4;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 50;
+}

@@ -52,7 +52,7 @@ function formatOdds(odds: OddsForPrompt[]): string {
   const extraMarketsPresent = [...byMarket.keys()].some((m) => !MANDATORY_MARKETS.includes(m));
   if (extraMarketsPresent) {
     lines.push(
-      "Yukaridaki Taraf Bahsi/KG/2.5 disindaki pazarlar (ilk yari, handikap, gol atacak oyuncu vb.) opsiyoneldir - bunlar icin ayri zorunlu tahmin YOK, ama Bahis Analizcisi ve Surpriz Yorumcu firsat buldukca (kisa sekilde) bu verilerden yararlanabilir.",
+      "Yukaridaki Taraf Bahsi/KG/2.5 disindaki pazarlar (ilk yari, handikap, gol atacak oyuncu vb.) opsiyoneldir - bunlar icin ayri zorunlu 'Tahminim:' formatinda tahmin YOK, ama asagidaki personalardan hangisi konusuyorsa bu verileri tamamen yok saymamali, en az birine kisaca deginmeli.",
     );
   }
   return lines.join("\n");
@@ -71,7 +71,7 @@ function buildSharedContext(input: AnalysisPromptInput): string {
 }
 
 const NO_FABRICATION_RULE =
-  "ASLA SAYI UYDURMA: Sana (arastirma veya oran olarak) verilmeyen hicbir sayisal veriyi (yuzde, ortalama, mac sayisi, gol sayisi, sure) kendin uretme. Sadece acikca verilmis oran degerlerini ve arastirma metnindeki bilgileri kullan.";
+  "ASLA SAYI UYDURMA: Sana (arastirma veya oran olarak) verilmeyen hicbir sayisal veriyi (yuzde, ortalama, mac sayisi, gol sayisi, sure, KESIN SKOR orn. '1-0', '2-1') kendin uretme. Sadece acikca verilmis oran degerlerini ve arastirma metnindeki bilgileri kullan. Bir pazarin sonucundan bahsederken MUTLAKA o pazarin gercek 'outcome' etiketini kullan (orn. takim adi, 'Yes'/'No', 'Over'/'Under') - elde olmayan bir kesin skor veya detay UYDURMA.";
 
 /**
  * Groq'a giden, mac icin "cekirdek" iki persona (Takim Analizcisi + Yorumcu)
@@ -86,6 +86,7 @@ export function buildTeamAndCommentaryPrompt(input: AnalysisPromptInput): string
     "1. Takim Analizcisi: form, sakatlik, kart cezasi, onemli anlar (orn. play-off/sampiyonluk icin 3 puan gerekliligi) uzerinden yorum. Asagida sakatlik/form/H2H arastirmasi verilmisse bunu mutlaka kullan ve yorumuna somut sekilde yansit - 'arastirma yapilmadi' gibi bir ifade sadece arastirma gercekten mevcut degilse kullanilir.",
     "2. Yorumcu: genel mac yorumu VE her pazar icin net bir tahmin.",
     "Asagida hangi pazarlar icin oran verisi varsa (Taraf Bahsi/1X2, KG Var/Yok, 2.5 Alt/Ust) HER UCU icin de ayri ayri yorum ve tahmin uret - sadece taraf bahsine (1X2) odaklanip digerlerini atlama. Veri olmayan bir pazar hakkinda yorum yapma, bunu acikca belirt.",
+    "Eger asagida ilk yari (1X2/1.5 Alt-Ust/KG), handikap veya gol atacak oyuncu pazarlarindan biri icin veri varsa, Yorumcu bunlardan en az birine ayri 'Tahminim:' cumlesi gerekmeden kisaca deginsin (orn. 'ilk yaride de X biraz daha avantajli gorunuyor') - bu verileri tamamen atlamak YASAK.",
     "ONEMLI - net tahmin kurali: Yorumcu persona'si, mevcut her pazar icin cekinmeden NET bir tahmin cumlesiyle bitirmeli, ornegin: 'Tahminim: MS 2', 'Tahminim: 2.5 Ust', 'Tahminim: KG Var'. 'Kesin bir sey soylemek zor', 'net bir tahminde bulunmak guc', 'iki yonlu de olasi' gibi cekingen/kacamak ifadeler YASAK - elindeki bilgiyle (oranlar, varsa arastirma) bir tarafi sec ve acikca soyle. Bu bir kesinlik iddiasi degil, olasilik degerlendirmesidir ama yine de net olmali.",
     "Ayrica kisa bir summary_text ozet alani uret (genel mac degerlendirmesi).",
     "",
@@ -106,7 +107,7 @@ export function buildBettingAndSurprisePrompt(input: AnalysisPromptInput): strin
   return [
     "Sen bir futbol bahis analiz ekibisin. Asagidaki mac icin iki ayri persona olarak Turkce yorum uret:",
     "1. Bahis Analizcisi: istatistik + oran okumasi, value degerlendirmesi (oran varsa). Bu persona detayli oran rakamlarini (hangi sitede kac) kullanabilir, ama yine de dogal cumlelerle yaz - ham liste degil.",
-    "2. Surpriz Yorumcu: favoriyi tekrarlamak yerine, macta cikabilecek daha az beklenen ama yuksek oranli sonuclari analiz eder. Elindeki pazarlari (Taraf Bahsi, varsa KG Var/Yok, varsa 2.5 Alt/Ust, varsa ilk yari pazarlari, handikap, gol atacak oyuncu) birlikte degerlendirip somut bir 'sürpriz kombinasyon' onerir - ornegin favori kazanir ama KG Var, favori kazanamaz + Alt, veya favorinin haricinde bir oyuncunun (surpriz secenegi varsa) gol atmasi gibi. Sadece iki ogeli bir oneri yeterli, daha fazlasi gerekmez. ONEMLI: Iddaa/Bilyoner/Nesine gibi Turkiye sitelerinden SPESIFIK bir oran sayisi UYDURMA (bu sitelere erisimin yok) - sadece asagida verilen uluslararasi referans oranlardan kombinasyonun YAKLASIK oranini hesapla (ilgili iki oranı çarparak kabaca tahmin edebilirsin) ve bunun uluslararasi referans oldugunu, Turkiye sitelerindeki gercek oranin farkli olabilecegini belirt. Sadece taraf bahsi verisi varsa, digerleri olmadan da (orn. beklenmedik bir skor/sonuc vurgusu ile) bir surpriz senaryosu sunmaya calis, veri yetersizse bunu acikca soyle.",
+    "2. Surpriz Yorumcu: favoriyi tekrarlamak yerine, macta cikabilecek daha az beklenen ama yuksek oranli sonuclari analiz eder. Elindeki pazarlari (Taraf Bahsi, varsa KG Var/Yok, varsa 2.5 Alt/Ust, varsa ilk yari pazarlari, handikap, gol atacak oyuncu) birlikte degerlendirip somut bir 'sürpriz kombinasyon' onerir - ornegin favori kazanir ama KG Var, favori kazanamaz + Alt, veya favorinin haricinde bir oyuncunun (surpriz secenegi varsa) gol atmasi gibi. Sadece iki ogeli bir oneri yeterli, daha fazlasi gerekmez. HER BACAK, asagida verilen oranlardaki gercek bir 'outcome' degerine karsilik gelmeli (orn. takim adi, 'Yes'/'No', 'Over'/'Under') - KESIN SKOR (orn. '1-0') UYDURMA, elindeki veri sadece kazanan/berabere veya alt/ust bilgisi, mac skoru degil. Bir bacak ilk yari pazarindan geliyorsa bunu acikca 'Ilk yari: ...' diye belirt ve diger bacaktan zaman kapsami olarak ayirt et (orn. 'Ilk yari: X kazanir' ile 'Mac sonu: KG Var' gibi, ikisini ayni sey gibi anlatip celiski yaratma). ONEMLI: Iddaa/Bilyoner/Nesine gibi Turkiye sitelerinden SPESIFIK bir oran sayisi UYDURMA (bu sitelere erisimin yok) - sadece asagida verilen uluslararasi referans oranlardan kombinasyonun YAKLASIK oranini hesapla (ilgili iki oranı çarparak kabaca tahmin edebilirsin) ve bunun uluslararasi referans oldugunu, Turkiye sitelerindeki gercek oranin farkli olabilecegini belirt. Sadece taraf bahsi verisi varsa, digerleri olmadan da (orn. beklenmedik bir sonuc vurgusu ile) bir surpriz senaryosu sunmaya calis, veri yetersizse bunu acikca soyle.",
     "",
     "OKUNABILIRLIK KURALI: Surpriz Yorumcu dogal, akici Turkce yazsin, sayi/oran listesi gibi degil. Bahis Analizcisi rakamlari kullanabilir ama tam cumleler halinde.",
     NO_FABRICATION_RULE,

@@ -10,6 +10,23 @@ export function formatKickoffTime(iso: string): string {
   }).format(new Date(iso));
 }
 
+export function formatDayHeading(iso: string): string {
+  return new Intl.DateTimeFormat("tr-TR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    timeZone: "Europe/Istanbul",
+  }).format(new Date(iso));
+}
+
+export function formatTimeOnly(iso: string): string {
+  return new Intl.DateTimeFormat("tr-TR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/Istanbul",
+  }).format(new Date(iso));
+}
+
 export function formatShortDateTime(iso: string): string {
   return new Intl.DateTimeFormat("tr-TR", {
     day: "2-digit",
