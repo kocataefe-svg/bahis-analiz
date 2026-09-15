@@ -9,6 +9,8 @@ export interface OddsQuote {
   market: string;
   outcome: string;
   point?: number;
+  /** Oyuncu bazli pazarlarda (orn. golu atacak oyuncu) oyuncu adi burada gelir. */
+  description?: string;
   price: number;
 }
 
@@ -16,6 +18,7 @@ interface RawOddsOutcome {
   name: string;
   price: number;
   point?: number;
+  description?: string;
 }
 
 interface RawOddsMarket {
@@ -58,6 +61,7 @@ function flattenEvent(event: RawOddsEvent): OddsQuote[] {
           market: market.key,
           outcome: outcome.name,
           point: outcome.point,
+          description: outcome.description,
           price: outcome.price,
         });
       }

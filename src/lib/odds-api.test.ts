@@ -141,6 +141,28 @@ describe("getEventOdds", () => {
     ]);
   });
 
+  it("carries the outcome description (player name for player-props markets)", async () => {
+    mockFetchOnce({
+      id: "evt1",
+      home_team: "Manchester City",
+      away_team: "Arsenal",
+      commence_time: "2026-09-20T15:00:00Z",
+      bookmakers: [
+        {
+          key: "onexbet",
+          markets: [
+            {
+              key: "player_goal_scorer_anytime",
+              outcomes: [{ name: "Yes", description: "Erling Haaland", price: 1.5 }],
+            },
+          ],
+        },
+      ],
+    });
+    const result = await getEventOdds("soccer_epl", "evt1", "player_goal_scorer_anytime");
+    expect(result[0].description).toBe("Erling Haaland");
+  });
+
   it("returns an empty array when the request fails", async () => {
     mockFetchOnce({}, false, 404);
     const result = await getEventOdds("soccer_epl", "evt1", "totals,btts");

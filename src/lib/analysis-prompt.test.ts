@@ -105,4 +105,30 @@ describe("buildAnalysisPrompt", () => {
     const prompt = buildAnalysisPrompt(baseInput);
     expect(prompt).toContain("mutlaka kullan");
   });
+
+  it("forbids inventing numeric stats (goal averages, injury counts) when there is no research context", () => {
+    const prompt = buildAnalysisPrompt(baseInput);
+    expect(prompt).toContain("UYDURMA");
+    expect(prompt).toContain("gol ortalamasi");
+  });
+
+  it("asks for natural, readable prose instead of a number/odds dump", () => {
+    const prompt = buildAnalysisPrompt(baseInput);
+    expect(prompt).toContain("OKUNABILIRLIK");
+    expect(prompt).toContain("ASLA SAYI UYDURMA");
+  });
+
+  it("includes optional markets (e.g. first-half totals) in the odds listing without demanding a mandatory pick for them", () => {
+    const prompt = buildAnalysisPrompt({
+      ...baseInput,
+      odds: [
+        { market: "h2h", bookmaker: "pinnacle", outcome: "Arsenal", price: 1.8 },
+        { market: "totals_h1", bookmaker: "pinnacle", outcome: "Over 1.5", price: 2.0 },
+      ],
+    });
+    expect(prompt).toContain("Ilk Yari 1.5 Alt/Ust");
+    expect(prompt).toContain("opsiyoneldir");
+    // Mandatory markets (totals/btts) missing -> still flagged as such, but totals_h1 is not treated as mandatory
+    expect(prompt).toContain("2.5 Alt/Ust, Karsilikli Gol (KG Var/Yok)");
+  });
 });
