@@ -13,6 +13,10 @@ describe("insertAiAnalysis", () => {
       surprise_pick_text: "e",
       summary_text: "d",
       model_used: "openai/gpt-oss-20b",
+      team_analyst_pick: { market: "h2h", outcome: "Arsenal", price: 1.8 },
+      commentator_pick: null,
+      betting_analyst_pick: null,
+      surprise_combo_pick: null,
     };
 
     await insertAiAnalysis({ from } as any, row);
@@ -33,6 +37,10 @@ describe("insertAiAnalysis", () => {
         surprise_pick_text: "e",
         summary_text: "d",
         model_used: "openai/gpt-oss-20b",
+        team_analyst_pick: null,
+        commentator_pick: null,
+        betting_analyst_pick: null,
+        surprise_combo_pick: null,
       }),
     ).rejects.toThrow("boom");
   });
@@ -103,6 +111,10 @@ describe("getLatestAnalysis", () => {
           summary_text: "ozet",
           model_used: "openai/gpt-oss-20b",
           generated_at: "2026-09-13T10:00:00Z",
+          team_analyst_pick: { market: "h2h", outcome: "Arsenal", price: 1.8 },
+          commentator_pick: null,
+          betting_analyst_pick: null,
+          surprise_combo_pick: { market: "btts_h1", outcome: "Yes", price: 4.42 },
         },
       ],
       error: null,
@@ -124,6 +136,10 @@ describe("getLatestAnalysis", () => {
       summaryText: "ozet",
       modelUsed: "openai/gpt-oss-20b",
       generatedAt: "2026-09-13T10:00:00Z",
+      teamAnalystPick: { market: "h2h", outcome: "Arsenal", price: 1.8 },
+      commentatorPick: null,
+      bettingAnalystPick: null,
+      surpriseComboPick: { market: "btts_h1", outcome: "Yes", price: 4.42 },
     });
   });
 

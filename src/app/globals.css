@@ -9,6 +9,7 @@
   --accent-strong: #22c06a;
   --odds: #f2b84b;
   --danger: #ef5350;
+  --highlight: #ff8a5c;
 }
 
 html {
@@ -58,4 +59,10 @@ input {
 
 button {
   cursor: pointer;
+}
+
+.highlighted-text-mark {
+  background: none;
+  color: var(--highlight);
+  font-weight: 600;
 }

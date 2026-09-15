@@ -112,6 +112,11 @@
   margin-bottom: 2px;
 }
 
+.personaCard {
+  position: relative;
+  padding-bottom: 26px;
+}
+
 .summary {
   font-weight: 500;
   color: var(--text);

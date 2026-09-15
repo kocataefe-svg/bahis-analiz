@@ -27,6 +27,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         <Link href="/" className={styles.brand}>
           Bahis Analiz
         </Link>
+        <Link href="/kuponlar" className={styles.iconButton} aria-label="Kuponlar">
+          📋
+        </Link>
         <button
           type="button"
           onClick={() => setSheetOpen(true)}

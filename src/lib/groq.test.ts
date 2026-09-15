@@ -58,7 +58,32 @@ describe("generateMatchAnalysis", () => {
       teamAnalystText: "takim analizi",
       commentatorText: "yorum",
       summaryText: "ozet",
+      teamAnalystPick: null,
+      commentatorPick: null,
     });
+  });
+
+  it("parses valid team_analyst_pick/commentator_pick fields, and drops malformed ones to null", async () => {
+    mockFetchOnce({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              team_analyst_text: "takim analizi",
+              commentator_text: "yorum",
+              summary_text: "ozet",
+              team_analyst_pick: { market: "h2h", outcome: "Arsenal" },
+              commentator_pick: "gecersiz sekil",
+            }),
+          },
+        },
+      ],
+    });
+
+    const result = await generateMatchAnalysis(minimalInput);
+
+    expect(result?.teamAnalystPick).toEqual({ market: "h2h", outcome: "Arsenal" });
+    expect(result?.commentatorPick).toBeNull();
   });
 
   it("returns null when the request fails", async () => {

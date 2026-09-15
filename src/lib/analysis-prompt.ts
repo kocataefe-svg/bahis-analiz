@@ -73,6 +73,12 @@ function buildSharedContext(input: AnalysisPromptInput): string {
 const NO_FABRICATION_RULE =
   "ASLA SAYI UYDURMA: Sana (arastirma veya oran olarak) verilmeyen hicbir sayisal veriyi (yuzde, ortalama, mac sayisi, gol sayisi, sure, KESIN SKOR orn. '1-0', '2-1') kendin uretme. Sadece acikca verilmis oran degerlerini ve arastirma metnindeki bilgileri kullan. Bir pazarin sonucundan bahsederken MUTLAKA o pazarin gercek 'outcome' etiketini kullan (orn. takim adi, 'Yes'/'No', 'Over'/'Under') - elde olmayan bir kesin skor veya detay UYDURMA.";
 
+const HIGHLIGHT_RULE =
+  "ONEMLI ISIM VURGUSU: Bir oyuncunun sakatligi/cezasi/eksikligi mac sonucunu onemli olcude etkileyebilecek kadar kritikse (orn. takimin en golcu oyuncusu sakat), o oyuncunun adini metinde **isim** seklinde (cift yildiz arasinda) isaretle. Sadece gercekten kritik olanlari isaretle - her ismi isaretlemek vurguyu anlamsizlastirir, arastirma yoksa hic isaretleme yapma.";
+
+const PICK_FIELD_RULE =
+  "YAPISAL TAHMIN ALANI: Metnindeki yoruma ek olarak, en guvendigin TEK pazar+sonuc ciftini ayri bir JSON alaninda belirt. Bu deger asagida sana verilen oran satirlarindan BIRIYLE birebir eslesmeli: market alani tam olarak su anahtarlardan biri olmali (h2h, totals, btts, h2h_h1, totals_h1, btts_h1, spreads, player_goal_scorer_anytime), outcome alani ise o pazardaki oran satirinin outcome metniyle AYNEN (harfi harfine) eslesmeli. Hicbir pazar icin yeterince emin degilsen veya oran verisi yoksa bu alani null birak - uydurma bir market veya outcome YAZMA.";
+
 /**
  * Groq'a giden, mac icin "cekirdek" iki persona (Takim Analizcisi + Yorumcu)
  * artı ozet alanini isteyen prompt. Bahis Analizcisi ve Surpriz Yorumcu
@@ -92,10 +98,12 @@ export function buildTeamAndCommentaryPrompt(input: AnalysisPromptInput): string
     "",
     "OKUNABILIRLIK KURALI: Metinler bir spor sitesi yazarinin dogal, akici Turkcesiyle yazilmali - ust uste siralanan sayi/oran/istatistik listesi DEGIL. Cumle basina en fazla bir-iki sayi kullan (orn. 'favori', 'az farkla one cikiyor', 'oranlar dengeli' gibi nitel ifadeler tercih edilsin). Arastirma metni varsa oradaki bilgiyi kisa ve dogal bir sekilde ozetle, ham veriyi (her oyuncu icin ayri sakatlik suresi, her mac icin ayri skor) tek tek sayma - genel bir tabloya donustur ('X'te birkac eksik var, Y ise daha zinde' gibi).",
     NO_FABRICATION_RULE,
+    HIGHLIGHT_RULE,
+    PICK_FIELD_RULE,
     "",
     buildSharedContext(input),
     "",
-    "Yanitini SADECE gecerli bir JSON nesnesi olarak ver, baska hicbir metin ekleme. JSON tam olarak su alanlari icermeli: team_analyst_text, commentator_text, summary_text (hepsi string).",
+    "Yanitini SADECE gecerli bir JSON nesnesi olarak ver, baska hicbir metin ekleme. JSON tam olarak su alanlari icermeli: team_analyst_text, commentator_text, summary_text (hepsi string), team_analyst_pick, commentator_pick (her biri {\"market\": string, \"outcome\": string} veya null).",
   ].join("\n");
 }
 
@@ -111,9 +119,12 @@ export function buildBettingAndSurprisePrompt(input: AnalysisPromptInput): strin
     "",
     "OKUNABILIRLIK KURALI: Surpriz Yorumcu dogal, akici Turkce yazsin, sayi/oran listesi gibi degil. Bahis Analizcisi rakamlari kullanabilir ama tam cumleler halinde.",
     NO_FABRICATION_RULE,
+    HIGHLIGHT_RULE,
+    PICK_FIELD_RULE,
+    "surprise_combo_pick icin: onerdigin kombinasyonun iki bacagindan EN ONE CIKAN/en carpici olanini (tek market+outcome) sec, ikisini ayni alanda birlestirmeye calisma.",
     "",
     buildSharedContext(input),
     "",
-    "Yanitini SADECE gecerli bir JSON nesnesi olarak ver, baska hicbir metin ekleme. JSON tam olarak su alanlari icermeli: betting_analyst_text, surprise_pick_text (hepsi string).",
+    "Yanitini SADECE gecerli bir JSON nesnesi olarak ver, baska hicbir metin ekleme. JSON tam olarak su alanlari icermeli: betting_analyst_text, surprise_pick_text (hepsi string), betting_analyst_pick, surprise_combo_pick (her biri {\"market\": string, \"outcome\": string} veya null).",
   ].join("\n");
 }

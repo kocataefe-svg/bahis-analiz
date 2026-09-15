@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { ResolvedPersonaPick } from "../persona-pick";
 
 export interface AiAnalysisInsertRow {
   match_id: string;
@@ -8,6 +9,10 @@ export interface AiAnalysisInsertRow {
   surprise_pick_text: string;
   summary_text: string;
   model_used: string;
+  team_analyst_pick: ResolvedPersonaPick | null;
+  commentator_pick: ResolvedPersonaPick | null;
+  betting_analyst_pick: ResolvedPersonaPick | null;
+  surprise_combo_pick: ResolvedPersonaPick | null;
 }
 
 export async function insertAiAnalysis(supabase: SupabaseClient, row: AiAnalysisInsertRow): Promise<void> {
@@ -43,13 +48,17 @@ export interface LatestAnalysis {
   summaryText: string;
   modelUsed: string;
   generatedAt: string;
+  teamAnalystPick: ResolvedPersonaPick | null;
+  commentatorPick: ResolvedPersonaPick | null;
+  bettingAnalystPick: ResolvedPersonaPick | null;
+  surpriseComboPick: ResolvedPersonaPick | null;
 }
 
 export async function getLatestAnalysis(supabase: SupabaseClient, matchId: string): Promise<LatestAnalysis | null> {
   const { data, error } = await supabase
     .from("ai_analyses")
     .select(
-      "team_analyst_text, betting_analyst_text, commentator_text, surprise_pick_text, summary_text, model_used, generated_at",
+      "team_analyst_text, betting_analyst_text, commentator_text, surprise_pick_text, summary_text, model_used, generated_at, team_analyst_pick, commentator_pick, betting_analyst_pick, surprise_combo_pick",
     )
     .eq("match_id", matchId)
     .order("generated_at", { ascending: false })
@@ -65,6 +74,10 @@ export async function getLatestAnalysis(supabase: SupabaseClient, matchId: strin
     summary_text: string;
     model_used: string;
     generated_at: string;
+    team_analyst_pick: ResolvedPersonaPick | null;
+    commentator_pick: ResolvedPersonaPick | null;
+    betting_analyst_pick: ResolvedPersonaPick | null;
+    surprise_combo_pick: ResolvedPersonaPick | null;
   }
 
   const rows = (data ?? []) as RawRow[];
@@ -79,5 +92,9 @@ export async function getLatestAnalysis(supabase: SupabaseClient, matchId: strin
     summaryText: row.summary_text,
     modelUsed: row.model_used,
     generatedAt: row.generated_at,
+    teamAnalystPick: row.team_analyst_pick ?? null,
+    commentatorPick: row.commentator_pick ?? null,
+    bettingAnalystPick: row.betting_analyst_pick ?? null,
+    surpriseComboPick: row.surprise_combo_pick ?? null,
   };
 }

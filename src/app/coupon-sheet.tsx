@@ -1,12 +1,26 @@
 "use client";
 
+import { useActionState } from "react";
 import { useCoupon } from "@/lib/coupon-context";
+import { useUserIdentity, KNOWN_USERS } from "@/lib/user-identity";
 import { MARKET_LABELS } from "@/lib/market-labels";
+import { shareCoupon, type ShareCouponState } from "@/app/kuponlar/actions";
 import styles from "./coupon-sheet.module.css";
+
+const initialShareState: ShareCouponState = { error: null, success: false };
 
 export function CouponSheet({ onClose }: { onClose: () => void }) {
   const { picks, removePick, clear } = useCoupon();
+  const { userName, setUserName } = useUserIdentity();
   const totalOdds = picks.reduce((acc, p) => acc * p.price, 1);
+
+  const boundShare = shareCoupon.bind(
+    null,
+    userName ?? "",
+    picks.map((p) => ({ matchLabel: p.matchLabel, market: p.market, outcome: p.outcome, price: p.price })),
+    totalOdds,
+  );
+  const [shareState, shareAction, sharePending] = useActionState(boundShare, initialShareState);
 
   return (
     <div className={styles.overlay} onClick={onClose}>
@@ -48,6 +62,40 @@ export function CouponSheet({ onClose }: { onClose: () => void }) {
               <button type="button" onClick={clear} className={styles.clearButton}>
                 Temizle
               </button>
+            </div>
+
+            <div className={styles.shareSection}>
+              <p className={styles.shareLabel}>Kimsin?</p>
+              <div className={styles.nameChips}>
+                {KNOWN_USERS.map((name) => (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => setUserName(name)}
+                    className={
+                      userName === name ? `${styles.nameChip} ${styles.nameChipSelected}` : styles.nameChip
+                    }
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+              {shareState.success ? (
+                <p className={styles.shareSuccess}>
+                  Kuponun paylasildi - herkes &quot;Kuponlar&quot; sayfasindan gorebilir.
+                </p>
+              ) : (
+                <form action={shareAction}>
+                  {shareState.error && (
+                    <p role="alert" className={styles.shareError}>
+                      {shareState.error}
+                    </p>
+                  )}
+                  <button type="submit" disabled={sharePending || !userName} className={styles.shareButton}>
+                    {sharePending ? "Paylasiliyor..." : "Kuponu Paylas"}
+                  </button>
+                </form>
+              )}
             </div>
           </>
         )}

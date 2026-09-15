@@ -49,7 +49,25 @@ describe("generateBettingAndSurpriseAnalysis", () => {
     expect(result).toEqual({
       bettingAnalystText: "bahis analizi",
       surprisePickText: "surpriz tahmin",
+      bettingAnalystPick: null,
+      surpriseComboPick: null,
     });
+  });
+
+  it("parses valid betting_analyst_pick/surprise_combo_pick fields, and drops malformed ones to null", async () => {
+    mockCreate.mockResolvedValue({
+      output_text: JSON.stringify({
+        betting_analyst_text: "bahis analizi",
+        surprise_pick_text: "surpriz tahmin",
+        betting_analyst_pick: { market: "totals", outcome: "Over 2.5" },
+        surprise_combo_pick: { market: "totals" },
+      }),
+    });
+
+    const result = await generateBettingAndSurpriseAnalysis(minimalInput);
+
+    expect(result?.bettingAnalystPick).toEqual({ market: "totals", outcome: "Over 2.5" });
+    expect(result?.surpriseComboPick).toBeNull();
   });
 
   it("returns null when the SDK call throws (rate limit/network)", async () => {

@@ -129,6 +129,18 @@ describe("buildTeamAndCommentaryPrompt (Groq: Takim Analizcisi + Yorumcu)", () =
     expect(prompt).toContain("OKUNABILIRLIK");
     expect(prompt).toContain("ASLA SAYI UYDURMA");
   });
+
+  it("asks for critical player names to be wrapped in ** for highlighting", () => {
+    const prompt = buildTeamAndCommentaryPrompt(baseInput);
+    expect(prompt).toContain("**isim**");
+  });
+
+  it("asks for a structured team_analyst_pick/commentator_pick field matching a real odds outcome", () => {
+    const prompt = buildTeamAndCommentaryPrompt(baseInput);
+    expect(prompt).toContain("team_analyst_pick");
+    expect(prompt).toContain("commentator_pick");
+    expect(prompt).toContain("AYNEN");
+  });
 });
 
 describe("buildBettingAndSurprisePrompt (Gemini: Bahis Analizcisi + Surpriz Yorumcu)", () => {
@@ -167,5 +179,12 @@ describe("buildBettingAndSurprisePrompt (Gemini: Bahis Analizcisi + Surpriz Yoru
     const prompt = buildBettingAndSurprisePrompt(baseInput);
     expect(prompt).toContain("KESIN SKOR");
     expect(prompt).toContain("Ilk yari: ...");
+  });
+
+  it("asks for a structured betting_analyst_pick/surprise_combo_pick field, single-leg only for the combo", () => {
+    const prompt = buildBettingAndSurprisePrompt(baseInput);
+    expect(prompt).toContain("betting_analyst_pick");
+    expect(prompt).toContain("surprise_combo_pick");
+    expect(prompt).toContain("EN ONE CIKAN");
   });
 });

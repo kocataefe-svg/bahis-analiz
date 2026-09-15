@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Oswald, Hanken_Grotesk } from "next/font/google";
 import { CouponProvider } from "@/lib/coupon-context";
+import { UserIdentityProvider } from "@/lib/user-identity";
 import { AppShell } from "./app-shell";
 import "./globals.css";
 
@@ -30,9 +31,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="tr" className={`${oswald.variable} ${hankenGrotesk.variable}`}>
       <body>
-        <CouponProvider>
-          <AppShell>{children}</AppShell>
-        </CouponProvider>
+        <UserIdentityProvider>
+          <CouponProvider>
+            <AppShell>{children}</AppShell>
+          </CouponProvider>
+        </UserIdentityProvider>
       </body>
     </html>
   );

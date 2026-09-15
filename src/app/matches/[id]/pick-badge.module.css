@@ -1,0 +1,20 @@
+.badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: var(--surface-2);
+  border: 1px solid var(--odds);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-family: var(--font-display), sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--odds);
+  white-space: nowrap;
+}
+
+.badgeSelected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #062b16;
+}

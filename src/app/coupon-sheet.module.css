@@ -116,3 +116,64 @@
   color: var(--text-dim);
   text-align: center;
 }
+
+.shareSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.shareLabel {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.nameChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.nameChip {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.nameChipSelected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #062b16;
+  font-weight: 600;
+}
+
+.shareButton {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: #062b16;
+  font-weight: 600;
+}
+
+.shareButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.shareError {
+  color: var(--danger);
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.shareSuccess {
+  color: var(--accent);
+  font-size: 13px;
+}

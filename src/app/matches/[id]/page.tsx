@@ -11,10 +11,12 @@ import { averagePricesByOutcome } from "@/lib/odds-chart";
 import { compareManualToReference } from "@/lib/odds-comparison";
 import { MARKET_LABELS } from "@/lib/market-labels";
 import { formatKickoffTime, formatRelativeUpdate } from "@/lib/format";
+import { HighlightedText } from "@/lib/highlighted-text";
 import { OddsChartView } from "./odds-chart-view";
 import { ManualOddsForm } from "./manual-odds-form";
 import { ResearchButton } from "./research-button";
 import { OddsChip } from "./odds-chip";
+import { PickBadge } from "./pick-badge";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -85,7 +87,9 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
         {research ? (
           <>
             <p className={styles.updatedAt}>{formatRelativeUpdate(research.generatedAt)}</p>
-            <p className={styles.researchContent}>{research.content}</p>
+            <p className={styles.researchContent}>
+              <HighlightedText text={research.content} />
+            </p>
             {research.sources.length > 0 && (
               <ul className={styles.sourcesList}>
                 {research.sources.map((s, i) => (
@@ -149,22 +153,44 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
           <p className={styles.noData}>Bu mac icin analiz henuz uretilmedi.</p>
         ) : (
           <div className={styles.analysis}>
-            <p className={styles.summary}>{analysis.summaryText}</p>
-            <div>
+            <p className={styles.summary}>
+              <HighlightedText text={analysis.summaryText} />
+            </p>
+            <div className={styles.personaCard}>
               <h3>Takim Analizcisi</h3>
-              <p>{analysis.teamAnalystText}</p>
+              <p>
+                <HighlightedText text={analysis.teamAnalystText} />
+              </p>
+              {analysis.teamAnalystPick && (
+                <PickBadge matchId={match.id} matchLabel={matchLabel} pick={analysis.teamAnalystPick} />
+              )}
             </div>
-            <div>
+            <div className={styles.personaCard}>
               <h3>Bahis Analizcisi</h3>
-              <p>{analysis.bettingAnalystText}</p>
+              <p>
+                <HighlightedText text={analysis.bettingAnalystText} />
+              </p>
+              {analysis.bettingAnalystPick && (
+                <PickBadge matchId={match.id} matchLabel={matchLabel} pick={analysis.bettingAnalystPick} />
+              )}
             </div>
-            <div>
+            <div className={styles.personaCard}>
               <h3>Yorumcu</h3>
-              <p>{analysis.commentatorText}</p>
+              <p>
+                <HighlightedText text={analysis.commentatorText} />
+              </p>
+              {analysis.commentatorPick && (
+                <PickBadge matchId={match.id} matchLabel={matchLabel} pick={analysis.commentatorPick} />
+              )}
             </div>
-            <div>
+            <div className={styles.personaCard}>
               <h3>Surpriz Yorumcu</h3>
-              <p>{analysis.surprisePickText}</p>
+              <p>
+                <HighlightedText text={analysis.surprisePickText} />
+              </p>
+              {analysis.surpriseComboPick && (
+                <PickBadge matchId={match.id} matchLabel={matchLabel} pick={analysis.surpriseComboPick} />
+              )}
             </div>
           </div>
         )}
