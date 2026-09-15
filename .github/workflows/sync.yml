@@ -4,6 +4,7 @@ on:
   schedule:
     - cron: "0 8 * * *"
     - cron: "0 9 * * *"
+    - cron: "0 */2 * * *"
   workflow_dispatch: {}
 
 jobs:
@@ -23,4 +24,13 @@ jobs:
       - name: Trigger AI analiz senkronizasyonu
         run: |
           curl -sf -X POST "${{ secrets.APP_BASE_URL }}/api/sync/analysis" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+
+  sync-results:
+    if: github.event.schedule == '0 */2 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger mac sonucu senkronizasyonu
+        run: |
+          curl -sf -X POST "${{ secrets.APP_BASE_URL }}/api/sync/results" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

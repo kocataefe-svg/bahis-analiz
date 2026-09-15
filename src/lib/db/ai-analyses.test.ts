@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
-import { insertAiAnalysis, getLatestAnalysisGeneratedAt, needsFreshAnalysis, getLatestAnalysis } from "./ai-analyses";
+import {
+  insertAiAnalysis,
+  getLatestAnalysisGeneratedAt,
+  needsFreshAnalysis,
+  getLatestAnalysis,
+  getLatestAnalysesByMatchIds,
+} from "./ai-analyses";
 
 describe("insertAiAnalysis", () => {
   it("inserts a row into ai_analyses", async () => {
@@ -160,5 +166,67 @@ describe("getLatestAnalysis", () => {
     const select = vi.fn(() => ({ eq }));
     const from = vi.fn(() => ({ select }));
     await expect(getLatestAnalysis({ from } as any, "m1")).rejects.toThrow("boom");
+  });
+});
+
+describe("getLatestAnalysesByMatchIds", () => {
+  it("returns an empty map without querying when matchIds is empty", async () => {
+    const from = vi.fn();
+    const result = await getLatestAnalysesByMatchIds({ from } as any, []);
+    expect(result).toEqual(new Map());
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it("keeps only the newest row per match_id (rows ordered generated_at desc)", async () => {
+    const order = vi.fn().mockResolvedValue({
+      data: [
+        {
+          match_id: "m1",
+          team_analyst_text: "yeni",
+          betting_analyst_text: "b",
+          commentator_text: "c",
+          surprise_pick_text: "e",
+          summary_text: "d",
+          model_used: "openai/gpt-oss-20b",
+          generated_at: "2026-09-14T10:00:00Z",
+          team_analyst_pick: { market: "h2h", outcome: "Arsenal", price: 1.8 },
+          commentator_pick: null,
+          betting_analyst_pick: null,
+          surprise_combo_pick: null,
+        },
+        {
+          match_id: "m1",
+          team_analyst_text: "eski",
+          betting_analyst_text: "b",
+          commentator_text: "c",
+          surprise_pick_text: "e",
+          summary_text: "d",
+          model_used: "openai/gpt-oss-20b",
+          generated_at: "2026-09-13T10:00:00Z",
+          team_analyst_pick: null,
+          commentator_pick: null,
+          betting_analyst_pick: null,
+          surprise_combo_pick: null,
+        },
+      ],
+      error: null,
+    });
+    const inFn = vi.fn(() => ({ order }));
+    const select = vi.fn(() => ({ in: inFn }));
+    const from = vi.fn(() => ({ select }));
+
+    const result = await getLatestAnalysesByMatchIds({ from } as any, ["m1"]);
+
+    expect(from).toHaveBeenCalledWith("ai_analyses");
+    expect(inFn).toHaveBeenCalledWith("match_id", ["m1"]);
+    expect(result.get("m1")?.teamAnalystText).toBe("yeni");
+  });
+
+  it("throws when the query fails", async () => {
+    const order = vi.fn().mockResolvedValue({ data: null, error: { message: "boom" } });
+    const inFn = vi.fn(() => ({ order }));
+    const select = vi.fn(() => ({ in: inFn }));
+    const from = vi.fn(() => ({ select }));
+    await expect(getLatestAnalysesByMatchIds({ from } as any, ["m1"])).rejects.toThrow("boom");
   });
 });

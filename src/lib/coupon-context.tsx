@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 export interface CouponPick {
   id: string;
+  matchId: string;
   matchLabel: string;
   market: string;
   outcome: string;

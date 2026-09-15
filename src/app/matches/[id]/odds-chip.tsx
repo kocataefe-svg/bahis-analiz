@@ -25,7 +25,7 @@ export function OddsChip({
   return (
     <button
       type="button"
-      onClick={() => togglePick({ id, matchLabel, market, outcome, price })}
+      onClick={() => togglePick({ id, matchId, matchLabel, market, outcome, price })}
       className={selected ? `${styles.chip} ${styles.chipSelected}` : styles.chip}
     >
       <span className={styles.outcome}>{outcome}</span>

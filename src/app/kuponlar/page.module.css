@@ -76,6 +76,18 @@
   font-size: 12px;
 }
 
+.statusWon {
+  color: var(--accent);
+  font-weight: 600;
+  margin-left: 6px;
+}
+
+.statusLost {
+  color: var(--danger);
+  font-weight: 600;
+  margin-left: 6px;
+}
+
 .total {
   font-size: 13px;
   border-top: 1px solid var(--border);

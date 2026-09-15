@@ -98,3 +98,59 @@ export async function getLatestAnalysis(supabase: SupabaseClient, matchId: strin
     surpriseComboPick: row.surprise_combo_pick ?? null,
   };
 }
+
+/**
+ * Birden fazla mac icin en son analizi tek sorguda getirir (istatistik
+ * sayfasi icin - mac basina N sorgu yerine). generated_at'e gore azalan
+ * siralanir, her match_id icin ilk (= en yeni) satir tutulur.
+ */
+export async function getLatestAnalysesByMatchIds(
+  supabase: SupabaseClient,
+  matchIds: string[],
+): Promise<Map<string, LatestAnalysis>> {
+  if (matchIds.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from("ai_analyses")
+    .select(
+      "match_id, team_analyst_text, betting_analyst_text, commentator_text, surprise_pick_text, summary_text, model_used, generated_at, team_analyst_pick, commentator_pick, betting_analyst_pick, surprise_combo_pick",
+    )
+    .in("match_id", matchIds)
+    .order("generated_at", { ascending: false });
+
+  if (error) throw new Error(`AI analizleri alinamadi: ${error.message}`);
+
+  interface RawRow {
+    match_id: string;
+    team_analyst_text: string;
+    betting_analyst_text: string;
+    commentator_text: string;
+    surprise_pick_text: string;
+    summary_text: string;
+    model_used: string;
+    generated_at: string;
+    team_analyst_pick: ResolvedPersonaPick | null;
+    commentator_pick: ResolvedPersonaPick | null;
+    betting_analyst_pick: ResolvedPersonaPick | null;
+    surprise_combo_pick: ResolvedPersonaPick | null;
+  }
+
+  const map = new Map<string, LatestAnalysis>();
+  for (const row of (data ?? []) as RawRow[]) {
+    if (map.has(row.match_id)) continue;
+    map.set(row.match_id, {
+      teamAnalystText: row.team_analyst_text,
+      bettingAnalystText: row.betting_analyst_text,
+      commentatorText: row.commentator_text,
+      surprisePickText: row.surprise_pick_text,
+      summaryText: row.summary_text,
+      modelUsed: row.model_used,
+      generatedAt: row.generated_at,
+      teamAnalystPick: row.team_analyst_pick ?? null,
+      commentatorPick: row.commentator_pick ?? null,
+      bettingAnalystPick: row.betting_analyst_pick ?? null,
+      surpriseComboPick: row.surprise_combo_pick ?? null,
+    });
+  }
+  return map;
+}

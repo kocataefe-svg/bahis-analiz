@@ -121,6 +121,85 @@ export async function getUpcomingMatchesWithLeague(
   }));
 }
 
+export interface MatchAwaitingResult {
+  id: string;
+  leagueId: string;
+  homeTeam: string;
+  awayTeam: string;
+  kickoffAt: string;
+  oddsApiEventId: string;
+}
+
+/**
+ * Sonucu henuz kontrol edilmemis, biten maclari getirir: kickoff +
+ * RESULT_CHECK_DELAY_HOURS gecmis ama The Odds API'nin /scores
+ * penceresini (daysFrom en fazla 3 gun) asmayacak kadar yakin zamanda
+ * oynanmis maclar. match_results'ta zaten satiri olanlar cagiran tarafta
+ * (getMatchResultsByIds ile) elenir - burada sadece zaman penceresi filtrelenir.
+ */
+export async function getMatchesAwaitingResult(
+  supabase: SupabaseClient,
+  resultCheckDelayHours: number,
+  limit: number,
+): Promise<MatchAwaitingResult[]> {
+  const now = Date.now();
+  const readyByIso = new Date(now - resultCheckDelayHours * 60 * 60 * 1000).toISOString();
+  const oldestIso = new Date(now - 3 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data, error } = await supabase
+    .from("matches")
+    .select("id, league_id, home_team, away_team, kickoff_at, odds_api_event_id")
+    .lte("kickoff_at", readyByIso)
+    .gte("kickoff_at", oldestIso)
+    .order("kickoff_at", { ascending: true })
+    .limit(limit);
+
+  if (error) throw new Error(`Sonucu beklenen maclar alinamadi: ${error.message}`);
+
+  interface RawRow {
+    id: string;
+    league_id: string;
+    home_team: string;
+    away_team: string;
+    kickoff_at: string;
+    odds_api_event_id: string;
+  }
+
+  return ((data ?? []) as RawRow[]).map((row) => ({
+    id: row.id,
+    leagueId: row.league_id,
+    homeTeam: row.home_team,
+    awayTeam: row.away_team,
+    kickoffAt: row.kickoff_at,
+    oddsApiEventId: row.odds_api_event_id,
+  }));
+}
+
+export interface MatchTeams {
+  homeTeam: string;
+  awayTeam: string;
+}
+
+export async function getMatchTeamsByIds(supabase: SupabaseClient, ids: string[]): Promise<Map<string, MatchTeams>> {
+  if (ids.length === 0) return new Map();
+
+  const { data, error } = await supabase.from("matches").select("id, home_team, away_team").in("id", ids);
+
+  if (error) throw new Error(`Mac takimlari alinamadi: ${error.message}`);
+
+  interface RawRow {
+    id: string;
+    home_team: string;
+    away_team: string;
+  }
+
+  const map = new Map<string, MatchTeams>();
+  for (const row of (data ?? []) as RawRow[]) {
+    map.set(row.id, { homeTeam: row.home_team, awayTeam: row.away_team });
+  }
+  return map;
+}
+
 export interface MatchDetail extends DisplayMatch {
   oddsApiEventId: string;
 }

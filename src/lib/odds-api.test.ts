@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { getOddsForSport, getEventOdds } from "./odds-api";
+import { getOddsForSport, getEventOdds, getScoresForSport } from "./odds-api";
 
 function mockFetchOnce(body: unknown, ok = true, status = 200) {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok, status, json: async () => body }));
@@ -172,6 +172,68 @@ describe("getEventOdds", () => {
   it("returns an empty array when fetch rejects with a network error", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
     const result = await getEventOdds("soccer_epl", "evt1", "totals,btts");
+    expect(result).toEqual([]);
+  });
+});
+
+describe("getScoresForSport", () => {
+  it("parses completed events, matching score entries to home/away team names", async () => {
+    mockFetchOnce([
+      {
+        id: "evt1",
+        completed: true,
+        home_team: "Manchester City",
+        away_team: "Arsenal",
+        scores: [
+          { name: "Manchester City", score: "2" },
+          { name: "Arsenal", score: "1" },
+        ],
+      },
+    ]);
+    const result = await getScoresForSport("soccer_epl", ["evt1"]);
+    expect(result).toEqual([{ eventId: "evt1", completed: true, homeScore: 2, awayScore: 1 }]);
+  });
+
+  it("returns null scores when the event is not completed yet", async () => {
+    mockFetchOnce([
+      {
+        id: "evt1",
+        completed: false,
+        home_team: "Manchester City",
+        away_team: "Arsenal",
+        scores: null,
+      },
+    ]);
+    const result = await getScoresForSport("soccer_epl", ["evt1"]);
+    expect(result).toEqual([{ eventId: "evt1", completed: false, homeScore: null, awayScore: null }]);
+  });
+
+  it("returns an empty array without calling fetch when eventIds is empty", async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    const result = await getScoresForSport("soccer_epl", []);
+    expect(result).toEqual([]);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("passes daysFrom=3 and the joined eventIds in the request", async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => [] });
+    vi.stubGlobal("fetch", fetchSpy);
+    await getScoresForSport("soccer_epl", ["evt1", "evt2"]);
+    const calledUrl = new URL(fetchSpy.mock.calls[0][0] as string);
+    expect(calledUrl.searchParams.get("daysFrom")).toBe("3");
+    expect(calledUrl.searchParams.get("eventIds")).toBe("evt1,evt2");
+  });
+
+  it("returns an empty array when the request fails", async () => {
+    mockFetchOnce({}, false, 500);
+    const result = await getScoresForSport("soccer_epl", ["evt1"]);
+    expect(result).toEqual([]);
+  });
+
+  it("returns an empty array when fetch rejects with a network error", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+    const result = await getScoresForSport("soccer_epl", ["evt1"]);
     expect(result).toEqual([]);
   });
 });

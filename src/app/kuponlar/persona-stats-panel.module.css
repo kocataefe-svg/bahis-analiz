@@ -1,0 +1,43 @@
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.title {
+  font-family: var(--font-display), sans-serif;
+  font-size: 15px;
+  color: var(--accent);
+}
+
+.subtitle {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13px;
+}
+
+.name {
+  color: var(--text);
+}
+
+.rate {
+  color: var(--text-dim);
+  font-family: var(--font-display), sans-serif;
+}

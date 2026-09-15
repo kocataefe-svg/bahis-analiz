@@ -17,7 +17,13 @@ export function CouponSheet({ onClose }: { onClose: () => void }) {
   const boundShare = shareCoupon.bind(
     null,
     userName ?? "",
-    picks.map((p) => ({ matchLabel: p.matchLabel, market: p.market, outcome: p.outcome, price: p.price })),
+    picks.map((p) => ({
+      matchId: p.matchId,
+      matchLabel: p.matchLabel,
+      market: p.market,
+      outcome: p.outcome,
+      price: p.price,
+    })),
     totalOdds,
   );
   const [shareState, shareAction, sharePending] = useActionState(boundShare, initialShareState);

@@ -21,7 +21,14 @@ export function PickBadge({
     <button
       type="button"
       onClick={() =>
-        togglePick({ id, matchLabel, market: pick.market, outcome: pick.outcome, price: pick.price })
+        togglePick({
+          id,
+          matchId,
+          matchLabel,
+          market: pick.market,
+          outcome: pick.outcome,
+          price: pick.price,
+        })
       }
       className={selected ? `${styles.badge} ${styles.badgeSelected}` : styles.badge}
     >
