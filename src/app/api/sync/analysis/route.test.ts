@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 vi.mock("@/lib/supabase", () => ({ getSupabaseClient: vi.fn(() => ({})) }));
 vi.mock("@/lib/db/matches", () => ({ getUpcomingMatches: vi.fn() }));
 vi.mock("@/lib/db/odds", () => ({ getLatestOdds: vi.fn() }));
-vi.mock("@/lib/db/match-research", () => ({ getMatchResearch: vi.fn() }));
+vi.mock("@/lib/db/match-research", () => ({ getMatchResearch: vi.fn(), insertMatchResearch: vi.fn() }));
 vi.mock("@/lib/db/leagues", () => ({ getActiveLeagues: vi.fn() }));
 vi.mock("@/lib/db/ai-analyses", () => ({
   getLatestAnalysisGeneratedAt: vi.fn(),
@@ -12,15 +12,17 @@ vi.mock("@/lib/db/ai-analyses", () => ({
 }));
 vi.mock("@/lib/analysis-orchestrator", () => ({ generateFullAnalysis: vi.fn() }));
 vi.mock("@/lib/odds-enrichment", () => ({ ensureExtraMarketsOdds: vi.fn() }));
+vi.mock("@/lib/gemini-research", () => ({ researchMatchContext: vi.fn(), RESEARCH_MODEL: "gemini-3.5-flash-lite" }));
 
 import { POST } from "./route";
 import { getUpcomingMatches } from "@/lib/db/matches";
 import { getLatestOdds } from "@/lib/db/odds";
-import { getMatchResearch } from "@/lib/db/match-research";
+import { getMatchResearch, insertMatchResearch } from "@/lib/db/match-research";
 import { getActiveLeagues } from "@/lib/db/leagues";
 import { getLatestAnalysisGeneratedAt, needsFreshAnalysis, insertAiAnalysis } from "@/lib/db/ai-analyses";
 import { generateFullAnalysis } from "@/lib/analysis-orchestrator";
 import { ensureExtraMarketsOdds } from "@/lib/odds-enrichment";
+import { researchMatchContext } from "@/lib/gemini-research";
 
 function makeRequest(authHeader?: string): Request {
   const headers = new Headers();
@@ -36,6 +38,10 @@ const match = {
   kickoffAt: "2026-09-20T15:00:00Z",
   oddsApiEventId: "evt1",
 };
+
+function todayMatch(overrides: Partial<typeof match> = {}) {
+  return { ...match, kickoffAt: new Date().toISOString(), ...overrides };
+}
 
 const fullAnalysisResult = {
   team_analyst_text: "a",
@@ -57,6 +63,8 @@ beforeEach(() => {
   vi.mocked(needsFreshAnalysis).mockReset().mockReturnValue(true);
   vi.mocked(insertAiAnalysis).mockReset().mockResolvedValue(undefined);
   vi.mocked(generateFullAnalysis).mockReset().mockResolvedValue(fullAnalysisResult);
+  vi.mocked(insertMatchResearch).mockReset().mockResolvedValue(undefined);
+  vi.mocked(researchMatchContext).mockReset();
 });
 
 afterEach(() => {
@@ -180,5 +188,73 @@ describe("POST /api/sync/analysis", () => {
     expect(generateFullAnalysis).toHaveBeenCalledWith(
       expect.objectContaining({ researchContext: "Arsenal'de Saka sakat." }),
     );
+  });
+
+  it("does not auto-research a match that isn't kicking off today", async () => {
+    vi.mocked(getUpcomingMatches).mockResolvedValue([match]); // kickoffAt: 2026-09-20, sabit gelecek tarih
+
+    await POST(makeRequest("Bearer test-secret") as any);
+
+    expect(researchMatchContext).not.toHaveBeenCalled();
+    expect(generateFullAnalysis).toHaveBeenCalledWith(expect.objectContaining({ researchContext: null }));
+  });
+
+  it("does not auto-research when research already exists for the match", async () => {
+    vi.mocked(getUpcomingMatches).mockResolvedValue([todayMatch()]);
+    vi.mocked(getMatchResearch).mockResolvedValue({
+      content: "mevcut arastirma",
+      sources: [],
+      modelUsed: "gemini-3.5-flash-lite",
+      generatedAt: "2026-09-14T10:00:00Z",
+    });
+
+    await POST(makeRequest("Bearer test-secret") as any);
+
+    expect(researchMatchContext).not.toHaveBeenCalled();
+  });
+
+  it("auto-researches a match with no existing research that kicks off today, and feeds the result into the prompt", async () => {
+    vi.mocked(getUpcomingMatches).mockResolvedValue([todayMatch()]);
+    vi.mocked(researchMatchContext).mockResolvedValue({
+      content: "bugunun arastirmasi",
+      sources: [{ url: "https://example.com", title: "Kaynak" }],
+    });
+
+    await POST(makeRequest("Bearer test-secret") as any);
+
+    expect(researchMatchContext).toHaveBeenCalledWith(
+      expect.objectContaining({ homeTeam: "Arsenal", awayTeam: "Chelsea" }),
+    );
+    expect(insertMatchResearch).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ match_id: "m1", content: "bugunun arastirmasi" }),
+    );
+    expect(generateFullAnalysis).toHaveBeenCalledWith(
+      expect.objectContaining({ researchContext: "bugunun arastirmasi" }),
+    );
+  });
+
+  it("does not save research or block analysis when auto-research hits a quota failure", async () => {
+    vi.mocked(getUpcomingMatches).mockResolvedValue([todayMatch()]);
+    vi.mocked(researchMatchContext).mockResolvedValue({ reason: "quota" });
+
+    const res = await POST(makeRequest("Bearer test-secret") as any);
+    const body = await res.json();
+
+    expect(insertMatchResearch).not.toHaveBeenCalled();
+    expect(generateFullAnalysis).toHaveBeenCalledWith(expect.objectContaining({ researchContext: null }));
+    expect(body).toEqual({ ok: true, generated: 1, skipped: 0, failed: 0 });
+  });
+
+  it("stops attempting further auto-research this run after the first quota failure", async () => {
+    vi.mocked(getUpcomingMatches).mockResolvedValue([
+      todayMatch({ id: "m1" }),
+      todayMatch({ id: "m2", oddsApiEventId: "evt2" }),
+    ]);
+    vi.mocked(researchMatchContext).mockResolvedValue({ reason: "quota" });
+
+    await POST(makeRequest("Bearer test-secret") as any);
+
+    expect(researchMatchContext).toHaveBeenCalledTimes(1);
   });
 });
