@@ -79,6 +79,15 @@ const HIGHLIGHT_RULE =
 const PICK_FIELD_RULE =
   "YAPISAL TAHMIN ALANI: Metnindeki yoruma ek olarak, en guvendigin TEK pazar+sonuc ciftini ayri bir JSON alaninda belirt. Bu deger asagida sana verilen oran satirlarindan BIRIYLE birebir eslesmeli: market alani tam olarak su anahtarlardan biri olmali (h2h, totals, btts, h2h_h1, totals_h1, btts_h1, spreads, player_goal_scorer_anytime), outcome alani ise o pazardaki oran satirinin outcome metniyle AYNEN (harfi harfine) eslesmeli. Hicbir pazar icin yeterince emin degilsen veya oran verisi yoksa bu alani null birak - uydurma bir market veya outcome YAZMA.";
 
+const ENTERTAINMENT_FRAMING_RULE =
+  "TON: Bu uygulama tamamen eglence ve analiz amaclidir, gercek para icermez ve sen bir yatirim/finansal danisman degilsin - bahis tavsiyesi verme sorumlulugun yok. Bu yuzden 'yatirim tavsiyesi degildir', 'garanti edilemez', 'kesin bir sey soylemek zor' gibi savunmaci/hukuki hedge ifadeleri KULLANMA. Kendinden emin, net ve eglenceli bir spor yorumcusu gibi yaz - tahmin etmek senin isin, cekinme.";
+
+const COMPETITIVE_FRAMING_RULE =
+  "YARISMA BAGLAMI: Bu macta konusan diger persona(lar)la bir tahmin yarisi icindesin - her personanin tahminleri gercek mac sonuclariyla karsilastirilip isabet orani ayri ayri kaydediliyor, amac en yuksek isabet oranina sahip persona olmak. Bu yuzden tahminini rastgele degil, oranin ima ettigi olasiligi (dusuk oran = piyasanin yuksek gordugu olasilik) ile elindeki arastirma/form bilgisini birlikte tartarak ver - kararsiz kalip ortayi bulmaya calismak yerine, verilerin agirlikli olarak isaret ettigi tarafi net sekilde sec.";
+
+const FREE_PREDICTION_RULE =
+  "SERBEST TAHMIN (opsiyonel, en fazla bir cumle): Sana verilen oran pazarlariyla sinirli kalmadan, futbol bilgine dayanarak oran verisi OLMAYAN bir konuda da tek cumlelik ek bir tahmin yapabilirsin - orn. 'Deplasman takimi 1.5 ustu gol atar', '[oyuncu adi] hem gol hem asist yapar', 'Mac 9 korneri gecer', 'Sari kart sayisi yuksek olur'. Bu senin futbol sezgine dayanan bir ONGORU'dur, arastirmadan gelen bir ISTATISTIK/GERCEK degildir - ortalamayi/oran sayisini uydurma (orn. 'ortalama 5.2 korner' gibi sahte bir istatistik YASAK), sadece dogal bir tahmin cumlesi kur. Bu tahmin gercek bir oran karsiligi olmadigindan YAPISAL pick alanina KESINLIKLE dahil etme, sadece serbest metinde kalsin. Dogal gelen bir sey yoksa bu kismi atla, zorlama.";
+
 /**
  * Groq'a giden, mac icin "cekirdek" iki persona (Takim Analizcisi + Yorumcu)
  * artı ozet alanini isteyen prompt. Bahis Analizcisi ve Surpriz Yorumcu
@@ -100,6 +109,9 @@ export function buildTeamAndCommentaryPrompt(input: AnalysisPromptInput): string
     NO_FABRICATION_RULE,
     HIGHLIGHT_RULE,
     PICK_FIELD_RULE,
+    ENTERTAINMENT_FRAMING_RULE,
+    COMPETITIVE_FRAMING_RULE,
+    FREE_PREDICTION_RULE,
     "",
     buildSharedContext(input),
     "",
@@ -122,6 +134,9 @@ export function buildBettingAndSurprisePrompt(input: AnalysisPromptInput): strin
     HIGHLIGHT_RULE,
     PICK_FIELD_RULE,
     "surprise_combo_pick icin: onerdigin kombinasyonun iki bacagindan EN ONE CIKAN/en carpici olanini (tek market+outcome) sec, ikisini ayni alanda birlestirmeye calisma.",
+    ENTERTAINMENT_FRAMING_RULE,
+    COMPETITIVE_FRAMING_RULE,
+    FREE_PREDICTION_RULE,
     "",
     buildSharedContext(input),
     "",

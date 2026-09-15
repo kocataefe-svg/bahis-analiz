@@ -148,6 +148,25 @@ describe("buildTeamAndCommentaryPrompt (Groq: Takim Analizcisi + Yorumcu)", () =
     expect(prompt).toContain("commentator_pick");
     expect(prompt).toContain("AYNEN");
   });
+
+  it("forbids defensive investment-advice hedging and asks for confident tone", () => {
+    const prompt = buildTeamAndCommentaryPrompt(baseInput);
+    expect(prompt).toContain("yatirim tavsiyesi degildir");
+    expect(prompt).toContain("KULLANMA");
+  });
+
+  it("frames the personas as competing on prediction accuracy and asks for a probability-weighted pick", () => {
+    const prompt = buildTeamAndCommentaryPrompt(baseInput);
+    expect(prompt).toContain("isabet orani");
+    expect(prompt).toContain("oranin ima ettigi olasiligi");
+  });
+
+  it("allows one optional free prediction on a market with no odds data, kept out of the structured pick field", () => {
+    const prompt = buildTeamAndCommentaryPrompt(baseInput);
+    expect(prompt).toContain("SERBEST TAHMIN");
+    expect(prompt).toContain("hem gol hem asist");
+    expect(prompt).toContain("YAPISAL pick alanina KESINLIKLE dahil etme");
+  });
 });
 
 describe("buildBettingAndSurprisePrompt (Gemini: Bahis Analizcisi + Surpriz Yorumcu)", () => {
@@ -193,5 +212,17 @@ describe("buildBettingAndSurprisePrompt (Gemini: Bahis Analizcisi + Surpriz Yoru
     expect(prompt).toContain("betting_analyst_pick");
     expect(prompt).toContain("surprise_combo_pick");
     expect(prompt).toContain("EN ONE CIKAN");
+  });
+
+  it("forbids defensive investment-advice hedging and frames the personas as competing on accuracy, without naming the other prompt's personas", () => {
+    const prompt = buildBettingAndSurprisePrompt(baseInput);
+    expect(prompt).toContain("yatirim tavsiyesi degildir");
+    expect(prompt).toContain("isabet orani");
+    expect(prompt).not.toContain("Takim Analizcisi");
+  });
+
+  it("allows one optional free prediction on a market with no odds data", () => {
+    const prompt = buildBettingAndSurprisePrompt(baseInput);
+    expect(prompt).toContain("SERBEST TAHMIN");
   });
 });
