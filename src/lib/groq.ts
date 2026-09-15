@@ -47,6 +47,12 @@ export async function generateMatchAnalysis(input: AnalysisPromptInput): Promise
         model: GROQ_MODEL,
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
+        // gpt-oss reasoning modelidir; varsayilan max_completion_tokens (1024)
+        // gizli "reasoning" tokenlarina gidip JSON govdesi bitmeden kesilebiliyor
+        // (canli testte gorulen bir hata). Dusuk reasoning + genis token payi
+        // bu riski ortadan kaldirir - gorev zaten derin akil yurutme gerektirmiyor.
+        reasoning_effort: "low",
+        max_completion_tokens: 3000,
       }),
     });
 

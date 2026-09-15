@@ -51,6 +51,8 @@ describe("generateMatchAnalysis", () => {
     const body = JSON.parse((call![1] as RequestInit).body as string);
     expect(body.model).toBe(GROQ_MODEL);
     expect(body.response_format).toEqual({ type: "json_object" });
+    expect(body.reasoning_effort).toBe("low");
+    expect(body.max_completion_tokens).toBeGreaterThanOrEqual(2048);
 
     expect(result).toEqual({
       teamAnalystText: "takim analizi",
