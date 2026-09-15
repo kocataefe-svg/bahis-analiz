@@ -103,7 +103,7 @@ describe("buildTeamAndCommentaryPrompt (Groq: Takim Analizcisi + Yorumcu)", () =
     });
     expect(prompt).not.toContain("Bahis Analizcisi");
     expect(prompt).not.toContain("Surpriz Yorumcu");
-    expect(prompt).toContain("bu verileri tamamen atlamak YASAK");
+    expect(prompt).toContain("bu verileri tamamen yok saymak da YASAK");
   });
 
   it("demands a decisive 'Tahminim: ...' pick per market and forbids hedging language", () => {
@@ -111,6 +111,13 @@ describe("buildTeamAndCommentaryPrompt (Groq: Takim Analizcisi + Yorumcu)", () =
     expect(prompt).toContain("Tahminim:");
     expect(prompt).toContain("YASAK");
     expect(prompt).toContain("net bir tahmin");
+  });
+
+  it("forbids dumping raw odds numbers back to back and forbids the garbled 'team name + digit' pick format", () => {
+    const prompt = buildTeamAndCommentaryPrompt(baseInput);
+    expect(prompt).toContain("RAKAM RAKAM SIRALAMA KESINLIKLE YASAK");
+    expect(prompt).toContain("Tahminim: Ajax 1");
+    expect(prompt).toContain("Tahminim: MS [takim adi]");
   });
 
   it("tells the team analyst persona to actually use the research content, not just acknowledge its absence", () => {
