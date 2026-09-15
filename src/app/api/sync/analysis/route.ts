@@ -12,7 +12,12 @@ import { isSyncRequestAuthorized } from "@/lib/sync-auth";
 export const maxDuration = 60;
 
 const ANALYSIS_SYNC_WINDOW_DAYS = 3;
-const MAX_MATCHES_PER_RUN = 15;
+// 15'ten dusuruldu (2026-09-15): her mac artik hem 7 pazarlik zenginlestirme
+// (Odds API round-trip) hem Groq cagrisi (bazen 429 sonrasi ~8sn'ye kadar
+// retry beklemesi) icerebiliyor - 15 mac canli ortamda 60sn'lik
+// maxDuration'i asip timeout'a neden oldu. Kapsanamayan maclar zaten
+// needsFreshAnalysis sayesinde bir sonraki cron'da tekrar denenir.
+const MAX_MATCHES_PER_RUN = 8;
 
 export async function POST(request: NextRequest) {
   if (!isSyncRequestAuthorized(request)) {
