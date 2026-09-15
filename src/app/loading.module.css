@@ -1,0 +1,25 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 560px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 12px 12px 64px;
+}
+
+.bar {
+  height: 12px;
+  border-radius: 6px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.row {
+  height: 52px;
+  border-radius: 8px;
+}

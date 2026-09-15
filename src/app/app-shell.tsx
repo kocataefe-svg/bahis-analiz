@@ -36,7 +36,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           className={styles.couponButton}
           aria-label="Kuponum"
         >
-          🎟 <span>{picks.length}</span>
+          🎟 <span key={picks.length}>{picks.length}</span>
         </button>
       </header>
       <div className={styles.content}>{children}</div>

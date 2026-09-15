@@ -61,6 +61,10 @@
   border-top: 1px solid var(--border);
 }
 
+.matches li {
+  animation: fade-slide-up var(--duration-base) var(--ease-out) both;
+}
+
 .matchLink {
   display: flex;
   justify-content: space-between;
@@ -68,10 +72,12 @@
   gap: 12px;
   padding: 12px 8px;
   border-bottom: 1px solid var(--border);
+  transition: background-color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
 }
 
 .matchLink:active {
   background: var(--surface-2);
+  transform: scale(0.98);
 }
 
 .matchInfo {

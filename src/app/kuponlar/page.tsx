@@ -50,8 +50,8 @@ export default async function KuponlarPage() {
         <p className={styles.empty}>Henuz paylasilan kupon yok.</p>
       ) : (
         <ul className={styles.list}>
-          {coupons.map((c) => (
-            <li key={c.id} className={styles.card}>
+          {coupons.map((c, i) => (
+            <li key={c.id} className={styles.card} style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }}>
               <div className={styles.cardHeader}>
                 <span className={styles.userName}>{c.userName}</span>
                 <span className={styles.updatedAt}>{formatRelativeUpdate(c.createdAt)}</span>

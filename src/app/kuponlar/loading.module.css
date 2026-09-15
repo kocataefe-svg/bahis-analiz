@@ -1,0 +1,23 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 560px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 12px 12px 64px;
+}
+
+.line {
+  border-radius: 6px;
+}
+
+.panel {
+  height: 100px;
+  border-radius: 10px;
+}
+
+.card {
+  height: 90px;
+  border-radius: 10px;
+}

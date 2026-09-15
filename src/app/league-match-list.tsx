@@ -59,10 +59,10 @@ export function LeagueMatchList({ leagues, matches }: { leagues: DisplayLeague[]
           <section key={day} className={styles.daySection}>
             <h2 className={styles.dayHeading}>{formatDayHeading(dayMatches[0].kickoffAt)}</h2>
             <ul className={styles.matches}>
-              {dayMatches.map((match) => {
+              {dayMatches.map((match, i) => {
                 const league = leagueById.get(match.leagueId);
                 return (
-                  <li key={match.id}>
+                  <li key={match.id} style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }}>
                     <Link href={`/matches/${match.id}`} className={styles.matchLink}>
                       <span className={styles.matchInfo}>
                         {league && <span className={styles.leagueTag}>{league.name}</span>}

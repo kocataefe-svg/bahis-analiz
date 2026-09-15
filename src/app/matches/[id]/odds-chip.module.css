@@ -9,16 +9,20 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text);
+  transition: background-color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
 }
 
 .chip:active {
   background: var(--border);
+  transform: scale(0.95);
 }
 
 .chipSelected {
   background: var(--accent);
   border-color: var(--accent);
   color: #062b16;
+  animation: pop-in var(--duration-fast) var(--ease-out);
 }
 
 .chipSelected .price {

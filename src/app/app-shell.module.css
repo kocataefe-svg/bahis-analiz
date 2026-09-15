@@ -21,6 +21,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.iconButton:active {
+  transform: scale(0.9);
 }
 
 .spacer {
@@ -47,12 +52,19 @@
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.couponButton:active {
+  transform: scale(0.95);
 }
 
 .couponButton span {
   font-family: var(--font-display), sans-serif;
   color: var(--accent);
   font-weight: 600;
+  display: inline-block;
+  animation: pop-in var(--duration-base) var(--ease-out);
 }
 
 .content {

@@ -11,10 +11,17 @@
   font-weight: 500;
   color: var(--odds);
   white-space: nowrap;
+  transition: background-color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.badge:active {
+  transform: scale(0.95);
 }
 
 .badgeSelected {
   background: var(--accent);
   border-color: var(--accent);
   color: #062b16;
+  animation: pop-in var(--duration-fast) var(--ease-out);
 }
