@@ -45,10 +45,12 @@
 }
 
 .dayHeading {
-  font-size: 13px;
+  font-family: var(--font-display), sans-serif;
+  font-size: 15px;
   font-weight: 600;
-  color: var(--text-dim);
+  color: var(--accent);
   text-transform: capitalize;
+  letter-spacing: 0.02em;
   padding: 4px 4px 8px;
 }
 
