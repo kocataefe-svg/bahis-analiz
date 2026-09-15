@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
         awayTeam: match.awayTeam,
         kickoffAt: match.kickoffAt,
         researchContext: research?.content ?? null,
-        odds: odds.map((o) => ({ bookmaker: o.bookmaker, outcome: o.outcome, price: o.price })),
+        odds: odds.map((o) => ({ market: o.market, bookmaker: o.bookmaker, outcome: o.outcome, price: o.price })),
       });
 
       if (!result) {

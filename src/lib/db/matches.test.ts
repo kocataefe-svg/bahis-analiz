@@ -124,7 +124,7 @@ describe("getUpcomingMatchesWithLeague", () => {
 });
 
 describe("getMatchById", () => {
-  it("returns the match when found", async () => {
+  it("returns the match (with its odds api event id) when found", async () => {
     const maybeSingle = vi.fn().mockResolvedValue({
       data: {
         id: "m1",
@@ -132,6 +132,7 @@ describe("getMatchById", () => {
         home_team: "Arsenal",
         away_team: "Chelsea",
         kickoff_at: "2026-09-20T15:00:00Z",
+        odds_api_event_id: "evt1",
       },
       error: null,
     });
@@ -149,6 +150,7 @@ describe("getMatchById", () => {
       homeTeam: "Arsenal",
       awayTeam: "Chelsea",
       kickoffAt: "2026-09-20T15:00:00Z",
+      oddsApiEventId: "evt1",
     });
   });
 

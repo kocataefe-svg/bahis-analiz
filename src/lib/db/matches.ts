@@ -115,22 +115,34 @@ export async function getUpcomingMatchesWithLeague(
   }));
 }
 
-export async function getMatchById(supabase: SupabaseClient, id: string): Promise<DisplayMatch | null> {
+export interface MatchDetail extends DisplayMatch {
+  oddsApiEventId: string;
+}
+
+export async function getMatchById(supabase: SupabaseClient, id: string): Promise<MatchDetail | null> {
   const { data, error } = await supabase
     .from("matches")
-    .select("id, league_id, home_team, away_team, kickoff_at")
+    .select("id, league_id, home_team, away_team, kickoff_at, odds_api_event_id")
     .eq("id", id)
     .maybeSingle();
 
   if (error) throw new Error(`Mac alinamadi: ${error.message}`);
   if (!data) return null;
 
-  const row = data as { id: string; league_id: string; home_team: string; away_team: string; kickoff_at: string };
+  const row = data as {
+    id: string;
+    league_id: string;
+    home_team: string;
+    away_team: string;
+    kickoff_at: string;
+    odds_api_event_id: string;
+  };
   return {
     id: row.id,
     leagueId: row.league_id,
     homeTeam: row.home_team,
     awayTeam: row.away_team,
     kickoffAt: row.kickoff_at,
+    oddsApiEventId: row.odds_api_event_id,
   };
 }

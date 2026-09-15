@@ -1,4 +1,7 @@
+import { MARKET_LABELS } from "./market-labels";
+
 export interface OddsForPrompt {
+  market: string;
   bookmaker: string;
   outcome: string;
   price: number;
@@ -23,10 +26,23 @@ function formatOdds(odds: OddsForPrompt[]): string {
   if (odds.length === 0) {
     return "Oran verisi mevcut degil. Oran bazli yorum (value bet vs.) yapma, sadece takim/istatistik yorumuna odaklan.";
   }
-  return [
-    "Guncel referans oranlar (uluslararasi bookmaker, Iddaa/Nesine ile birebir ayni degil):",
-    ...odds.map((o) => `- ${o.bookmaker}: ${o.outcome} @ ${o.price}`),
-  ].join("\n");
+
+  const byMarket = new Map<string, OddsForPrompt[]>();
+  for (const o of odds) {
+    if (!byMarket.has(o.market)) byMarket.set(o.market, []);
+    byMarket.get(o.market)!.push(o);
+  }
+
+  const lines = ["Guncel referans oranlar (uluslararasi bookmaker, Iddaa/Nesine ile birebir ayni degil), pazar bazinda:"];
+  for (const [market, quotes] of byMarket) {
+    lines.push(`${MARKET_LABELS[market] ?? market}:`);
+    lines.push(...quotes.map((o) => `- ${o.bookmaker}: ${o.outcome} @ ${o.price}`));
+  }
+  const missingMarkets = Object.keys(MARKET_LABELS).filter((m) => !byMarket.has(m));
+  if (missingMarkets.length > 0) {
+    lines.push(`Su pazarlar icin oran verisi yok, bunlar hakkinda yorum/tahmin yapma: ${missingMarkets.map((m) => MARKET_LABELS[m]).join(", ")}.`);
+  }
+  return lines.join("\n");
 }
 
 export function buildAnalysisPrompt(input: AnalysisPromptInput): string {
@@ -35,6 +51,7 @@ export function buildAnalysisPrompt(input: AnalysisPromptInput): string {
     "1. Takim Analizcisi: form, sakatlik, kart cezasi, onemli anlar (orn. play-off/sampiyonluk icin 3 puan gerekliligi) uzerinden yorum.",
     "2. Bahis Analizcisi: istatistik + oran okumasi, value degerlendirmesi (oran varsa).",
     "3. Yorumcu: genel mac yorumu ve tahmini.",
+    "Asagida hangi pazarlar icin oran verisi varsa (Taraf Bahsi/1X2, KG Var/Yok, 2.5 Alt/Ust) HER UCU icin de ayri ayri yorum ve tahmin uret - sadece taraf bahsine (1X2) odaklanip digerlerini atlama. Veri olmayan bir pazar hakkinda yorum yapma, bunu acikca belirt.",
     "Ayrica kisa bir summary_text ozet alani uret.",
     "",
     `Mac: ${input.homeTeam} - ${input.awayTeam}, ${input.kickoffAt}`,

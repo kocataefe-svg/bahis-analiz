@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { getOddsForSport } from "./odds-api";
+import { getOddsForSport, getEventOdds } from "./odds-api";
 
 function mockFetchOnce(body: unknown, ok = true, status = 200) {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok, status, json: async () => body }));
@@ -88,6 +88,68 @@ describe("getOddsForSport", () => {
   it("returns an empty array when fetch rejects with a network error", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
     const result = await getOddsForSport("soccer_epl");
+    expect(result).toEqual([]);
+  });
+});
+
+describe("getEventOdds", () => {
+  it("flattens a single event's bookmakers/markets/outcomes, keeping the point field", async () => {
+    mockFetchOnce({
+      id: "evt1",
+      home_team: "Manchester City",
+      away_team: "Arsenal",
+      commence_time: "2026-09-20T15:00:00Z",
+      bookmakers: [
+        {
+          key: "pinnacle",
+          markets: [
+            {
+              key: "totals",
+              outcomes: [
+                { name: "Over", point: 2.5, price: 1.9 },
+                { name: "Under", point: 2.5, price: 1.95 },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const result = await getEventOdds("soccer_epl", "evt1", "totals,btts");
+    expect(result).toEqual([
+      {
+        eventId: "evt1",
+        homeTeam: "Manchester City",
+        awayTeam: "Arsenal",
+        commenceTime: "2026-09-20T15:00:00Z",
+        bookmaker: "pinnacle",
+        market: "totals",
+        outcome: "Over",
+        point: 2.5,
+        price: 1.9,
+      },
+      {
+        eventId: "evt1",
+        homeTeam: "Manchester City",
+        awayTeam: "Arsenal",
+        commenceTime: "2026-09-20T15:00:00Z",
+        bookmaker: "pinnacle",
+        market: "totals",
+        outcome: "Under",
+        point: 2.5,
+        price: 1.95,
+      },
+    ]);
+  });
+
+  it("returns an empty array when the request fails", async () => {
+    mockFetchOnce({}, false, 404);
+    const result = await getEventOdds("soccer_epl", "evt1", "totals,btts");
+    expect(result).toEqual([]);
+  });
+
+  it("returns an empty array when fetch rejects with a network error", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+    const result = await getEventOdds("soccer_epl", "evt1", "totals,btts");
     expect(result).toEqual([]);
   });
 });

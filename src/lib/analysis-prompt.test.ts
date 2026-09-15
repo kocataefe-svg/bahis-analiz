@@ -46,10 +46,35 @@ describe("buildAnalysisPrompt", () => {
   it("includes bookmaker/outcome/price when odds are present", () => {
     const prompt = buildAnalysisPrompt({
       ...baseInput,
-      odds: [{ bookmaker: "pinnacle", outcome: "Arsenal", price: 1.8 }],
+      odds: [{ market: "h2h", bookmaker: "pinnacle", outcome: "Arsenal", price: 1.8 }],
     });
     expect(prompt).toContain("pinnacle");
     expect(prompt).toContain("Arsenal");
     expect(prompt).toContain("1.8");
+  });
+
+  it("groups odds by market with Turkish labels and tells the model to comment on every market present", () => {
+    const prompt = buildAnalysisPrompt({
+      ...baseInput,
+      odds: [
+        { market: "h2h", bookmaker: "pinnacle", outcome: "Arsenal", price: 1.8 },
+        { market: "totals", bookmaker: "pinnacle", outcome: "Over 2.5", price: 1.9 },
+        { market: "btts", bookmaker: "pinnacle", outcome: "Yes", price: 1.7 },
+      ],
+    });
+    expect(prompt).toContain("Taraf Bahsi (1X2)");
+    expect(prompt).toContain("2.5 Alt/Ust");
+    expect(prompt).toContain("Karsilikli Gol (KG Var/Yok)");
+    expect(prompt).toContain("HER UCU icin de ayri ayri yorum");
+  });
+
+  it("tells the model not to comment on markets that have no odds data", () => {
+    const prompt = buildAnalysisPrompt({
+      ...baseInput,
+      odds: [{ market: "h2h", bookmaker: "pinnacle", outcome: "Arsenal", price: 1.8 }],
+    });
+    expect(prompt).toContain("2.5 Alt/Ust");
+    expect(prompt).toContain("Karsilikli Gol (KG Var/Yok)");
+    expect(prompt).toContain("bunlar hakkinda yorum/tahmin yapma");
   });
 });

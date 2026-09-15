@@ -6,8 +6,10 @@ import { getLatestOdds, getOddsHistory } from "@/lib/db/odds";
 import { getLatestAnalysis } from "@/lib/db/ai-analyses";
 import { getManualOddsForMatch } from "@/lib/db/manual-odds";
 import { getMatchResearch } from "@/lib/db/match-research";
+import { ensureExtraMarketsOdds } from "@/lib/odds-enrichment";
 import { averagePricesByOutcome } from "@/lib/odds-chart";
 import { compareManualToReference } from "@/lib/odds-comparison";
+import { MARKET_LABELS } from "@/lib/market-labels";
 import { formatKickoffTime, formatRelativeUpdate } from "@/lib/format";
 import { OddsChartView } from "./odds-chart-view";
 import { ManualOddsForm } from "./manual-odds-form";
@@ -26,7 +28,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
     notFound();
   }
 
-  const [league, latestOdds, oddsHistory, analysis, manualOdds, research] = await Promise.all([
+  const [league, initialLatestOdds, oddsHistory, analysis, manualOdds, research] = await Promise.all([
     getLeagueById(supabase, match.leagueId),
     getLatestOdds(supabase, match.id),
     getOddsHistory(supabase, match.id),
@@ -35,11 +37,33 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
     getMatchResearch(supabase, match.id),
   ]);
 
+  let latestOdds = initialLatestOdds;
+  if (league?.oddsApiSportKey) {
+    const existingMarkets = new Set(latestOdds.map((o) => o.market));
+    const insertedNew = await ensureExtraMarketsOdds(
+      supabase,
+      match.id,
+      match.oddsApiEventId,
+      league.oddsApiSportKey,
+      existingMarkets,
+    );
+    if (insertedNew) {
+      latestOdds = await getLatestOdds(supabase, match.id);
+    }
+  }
+
+  const h2hOdds = latestOdds.filter((o) => o.market === "h2h");
+  const oddsByMarket = new Map<string, typeof latestOdds>();
+  for (const o of latestOdds) {
+    if (!oddsByMarket.has(o.market)) oddsByMarket.set(o.market, []);
+    oddsByMarket.get(o.market)!.push(o);
+  }
+
   const manualComparisons =
     manualOdds.length > 0
       ? compareManualToReference(
           manualOdds.map((m) => ({ outcome: m.outcome, price: m.price })),
-          averagePricesByOutcome(latestOdds),
+          averagePricesByOutcome(h2hOdds),
         )
       : [];
 
@@ -81,25 +105,28 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
 
       <section className={styles.section}>
         <h2>Guncel Referans Oran</h2>
-        {latestOdds[0]?.fetchedAt && (
-          <p className={styles.updatedAt}>{formatRelativeUpdate(latestOdds[0].fetchedAt)}</p>
-        )}
+        {h2hOdds[0]?.fetchedAt && <p className={styles.updatedAt}>{formatRelativeUpdate(h2hOdds[0].fetchedAt)}</p>}
         {latestOdds.length === 0 ? (
           <p className={styles.noData}>Oran verisi mevcut degil.</p>
         ) : (
-          <ul className={styles.oddsList}>
-            {latestOdds.map((o, i) => (
-              <li key={`${o.bookmaker}-${o.outcome}-${i}`}>
-                {o.outcome}: {o.price} ({o.bookmaker})
-              </li>
-            ))}
-          </ul>
+          [...oddsByMarket.entries()].map(([market, quotes]) => (
+            <div key={market}>
+              <h3>{MARKET_LABELS[market] ?? market}</h3>
+              <ul className={styles.oddsList}>
+                {quotes.map((o, i) => (
+                  <li key={`${market}-${o.bookmaker}-${o.outcome}-${i}`}>
+                    {o.outcome}: {o.price} ({o.bookmaker})
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))
         )}
-        <h3>Oran Gecmisi</h3>
+        <h3>Oran Gecmisi (Taraf Bahsi)</h3>
         <p className={styles.noData}>
           Bu grafik gercek bahis hacmini degil, periyodik oran olcumlerimizi gosterir.
         </p>
-        <OddsChartView history={oddsHistory} />
+        <OddsChartView history={oddsHistory.filter((h) => h.market === "h2h")} />
       </section>
 
       <section className={styles.section}>

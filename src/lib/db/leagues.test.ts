@@ -67,9 +67,9 @@ describe("getActiveLeaguesForDisplay", () => {
 });
 
 describe("getLeagueById", () => {
-  it("returns the league when found", async () => {
+  it("returns the league (with its odds api sport key) when found", async () => {
     const maybeSingle = vi.fn().mockResolvedValue({
-      data: { id: "l1", name: "Premier League", country: "England" },
+      data: { id: "l1", name: "Premier League", country: "England", odds_api_sport_key: "soccer_epl" },
       error: null,
     });
     const eq = vi.fn(() => ({ maybeSingle }));
@@ -80,7 +80,7 @@ describe("getLeagueById", () => {
 
     expect(from).toHaveBeenCalledWith("leagues");
     expect(eq).toHaveBeenCalledWith("id", "l1");
-    expect(result).toEqual({ id: "l1", name: "Premier League", country: "England" });
+    expect(result).toEqual({ id: "l1", name: "Premier League", country: "England", oddsApiSportKey: "soccer_epl" });
   });
 
   it("returns null when not found", async () => {
