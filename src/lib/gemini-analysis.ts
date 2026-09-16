@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { buildBettingAndSurprisePrompt, type AnalysisPromptInput } from "./analysis-prompt";
 import { normalizePersonaPick, type RawPersonaPick } from "./persona-pick";
+import { callWithGeminiKeyFallback } from "./gemini-keys";
 
 /** Bahis Analizcisi + Surpriz Yorumcu - "sayisal agirlikli" iki persona (bkz. analysis-prompt.ts). */
 export const GEMINI_ANALYSIS_MODEL = "gemini-3.5-flash-lite";
@@ -17,14 +18,6 @@ interface RawJson {
   surprise_pick_text?: string;
   betting_analyst_pick?: unknown;
   surprise_combo_pick?: unknown;
-}
-
-function getApiKey(): string {
-  const key = process.env.GEMINI_API_KEY;
-  if (!key) {
-    throw new Error("GEMINI_API_KEY env degiskeni tanimli degil");
-  }
-  return key;
 }
 
 const PICK_SCHEMA = {
@@ -56,11 +49,9 @@ const RESPONSE_SCHEMA = {
 export async function generateBettingAndSurpriseAnalysis(
   input: AnalysisPromptInput,
 ): Promise<BettingAndSurpriseResult | null> {
-  const apiKey = getApiKey();
   const prompt = buildBettingAndSurprisePrompt(input);
 
-  let outputText: string;
-  try {
+  const result = await callWithGeminiKeyFallback(async (apiKey) => {
     const ai = new GoogleGenAI({ apiKey });
     const interaction = await ai.interactions.create({
       model: GEMINI_ANALYSIS_MODEL,
@@ -72,18 +63,19 @@ export async function generateBettingAndSurpriseAnalysis(
       },
     });
     if (!interaction.output_text) {
-      console.warn("Gemini bahis/surpriz analizi bos yanit (output_text yok)");
-      return null;
+      throw new Error("Gemini bahis/surpriz analizi bos yanit (output_text yok)");
     }
-    outputText = interaction.output_text;
-  } catch (err) {
-    console.warn("Gemini bahis/surpriz analizi basarisiz (API hatasi):", err);
+    return interaction.output_text;
+  });
+
+  if (!result.ok) {
+    console.warn(`Gemini bahis/surpriz analizi basarisiz (${result.reason})`);
     return null;
   }
 
   let parsed: RawJson;
   try {
-    parsed = JSON.parse(outputText) as RawJson;
+    parsed = JSON.parse(result.value) as RawJson;
   } catch (err) {
     console.warn("Gemini bahis/surpriz yaniti gecerli JSON degil:", err);
     return null;

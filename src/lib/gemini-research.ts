@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { callWithGeminiKeyFallback } from "./gemini-keys";
 
 export const RESEARCH_MODEL = "gemini-3.5-flash-lite";
 
@@ -24,21 +25,6 @@ export interface ResearchFailure {
   reason: ResearchFailureReason;
 }
 
-function isQuotaExhaustedError(err: unknown): boolean {
-  const status = (err as { status?: number } | undefined)?.status;
-  if (status === 429) return true;
-  const message = err instanceof Error ? err.message : String(err);
-  return message.includes("RESOURCE_EXHAUSTED") || message.includes('"code":429');
-}
-
-function getApiKey(): string {
-  const key = process.env.GEMINI_API_KEY;
-  if (!key) {
-    throw new Error("GEMINI_API_KEY env degiskeni tanimli degil");
-  }
-  return key;
-}
-
 function buildResearchPrompt(input: ResearchMatchInput): string {
   return [
     `${input.homeTeam} - ${input.awayTeam} macini arastir (${input.kickoffAt} tarihli).`,
@@ -53,32 +39,33 @@ function buildResearchPrompt(input: ResearchMatchInput): string {
 export async function researchMatchContext(
   input: ResearchMatchInput,
 ): Promise<MatchResearchResult | ResearchFailure> {
-  const apiKey = getApiKey();
+  const prompt = buildResearchPrompt(input);
 
-  try {
+  const result = await callWithGeminiKeyFallback(async (apiKey) => {
     const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
       model: RESEARCH_MODEL,
-      contents: buildResearchPrompt(input),
+      contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
       },
     });
-
-    const text = response.text;
-    if (!text) {
-      console.warn("Gemini arastirma yaniti bos");
-      return { reason: "unknown" };
+    if (!response.text) {
+      throw new Error("Gemini arastirma yaniti bos");
     }
+    return response;
+  });
 
-    const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
-    const sources: MatchResearchSource[] = chunks
-      .map((c) => ({ url: c.web?.uri ?? "", title: c.web?.title ?? "" }))
-      .filter((s) => s.url);
-
-    return { content: text, sources };
-  } catch (err) {
-    console.warn("Gemini arastirmasi basarisiz:", err);
-    return { reason: isQuotaExhaustedError(err) ? "quota" : "unknown" };
+  if (!result.ok) {
+    console.warn(`Gemini arastirmasi basarisiz (${result.reason})`);
+    return { reason: result.reason };
   }
+
+  const response = result.value;
+  const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
+  const sources: MatchResearchSource[] = chunks
+    .map((c) => ({ url: c.web?.uri ?? "", title: c.web?.title ?? "" }))
+    .filter((s) => s.url);
+
+  return { content: response.text as string, sources };
 }

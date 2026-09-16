@@ -80,4 +80,18 @@ describe("researchMatchContext", () => {
     vi.unstubAllEnvs();
     await expect(researchMatchContext(minimalInput)).rejects.toThrow();
   });
+
+  it("falls back to a second GEMINI_API_KEYS entry when the first is quota-exhausted", async () => {
+    vi.stubEnv("GEMINI_API_KEYS", "key1,key2");
+    const quotaError = Object.assign(new Error('{"status":"RESOURCE_EXHAUSTED"}'), { status: 429 });
+    mockGenerateContent.mockRejectedValueOnce(quotaError).mockResolvedValueOnce({
+      text: "ikinci anahtardan sonuc",
+      candidates: [],
+    });
+
+    const result = await researchMatchContext(minimalInput);
+
+    expect(mockGenerateContent).toHaveBeenCalledTimes(2);
+    expect(result).toEqual({ content: "ikinci anahtardan sonuc", sources: [] });
+  });
 });

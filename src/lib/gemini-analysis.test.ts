@@ -98,4 +98,20 @@ describe("generateBettingAndSurpriseAnalysis", () => {
     vi.unstubAllEnvs();
     await expect(generateBettingAndSurpriseAnalysis(minimalInput)).rejects.toThrow();
   });
+
+  it("falls back to a second GEMINI_API_KEYS entry when the first is quota-exhausted", async () => {
+    vi.stubEnv("GEMINI_API_KEYS", "key1,key2");
+    const quotaError = Object.assign(new Error('{"status":"RESOURCE_EXHAUSTED"}'), { status: 429 });
+    mockCreate.mockRejectedValueOnce(quotaError).mockResolvedValueOnce({ output_text: validContent() });
+
+    const result = await generateBettingAndSurpriseAnalysis(minimalInput);
+
+    expect(mockCreate).toHaveBeenCalledTimes(2);
+    expect(result).toEqual({
+      bettingAnalystText: "bahis analizi",
+      surprisePickText: "surpriz tahmin",
+      bettingAnalystPick: null,
+      surpriseComboPick: null,
+    });
+  });
 });
