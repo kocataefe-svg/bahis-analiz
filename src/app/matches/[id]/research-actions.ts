@@ -6,7 +6,7 @@ import { getMatchById, type MatchDetail } from "@/lib/db/matches";
 import { getMatchResearch, insertMatchResearch } from "@/lib/db/match-research";
 import { getLatestOdds } from "@/lib/db/odds";
 import { insertAiAnalysis } from "@/lib/db/ai-analyses";
-import { researchMatchContext, RESEARCH_MODEL } from "@/lib/gemini-research";
+import { researchMatchContext, RESEARCH_MODEL } from "@/lib/web-research";
 import { generateFullAnalysis } from "@/lib/analysis-orchestrator";
 
 export interface ResearchMatchState {

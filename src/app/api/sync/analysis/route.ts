@@ -7,7 +7,7 @@ import { getActiveLeagues } from "@/lib/db/leagues";
 import { getLatestAnalysisGeneratedAt, needsFreshAnalysis, insertAiAnalysis } from "@/lib/db/ai-analyses";
 import { generateFullAnalysis } from "@/lib/analysis-orchestrator";
 import { ensureExtraMarketsOdds } from "@/lib/odds-enrichment";
-import { researchMatchContext, RESEARCH_MODEL } from "@/lib/gemini-research";
+import { researchMatchContext, RESEARCH_MODEL } from "@/lib/web-research";
 import { isSyncRequestAuthorized } from "@/lib/sync-auth";
 
 export const maxDuration = 60;
@@ -20,9 +20,10 @@ const ANALYSIS_SYNC_WINDOW_DAYS = 3;
 // needsFreshAnalysis sayesinde bir sonraki cron'da tekrar denenir.
 const MAX_MATCHES_PER_RUN = 8;
 
-// Arastirma (Gemini arama-grounding) kotasi paylasimli ve kisitli - bir
-// calismada cok fazla mac icin denemek kotayi tek seferde tuketip diger
-// kullanicilarin manuel Arastir butonunu da bloke edebilir. Sadece o gun
+// Arastirma (Tavily web aramasi, bkz. web-research.ts) kotasi paylasimli ve
+// aylik sinirli - bir calismada cok fazla mac icin denemek kotayi tek
+// seferde tuketip diger kullanicilarin manuel Arastir butonunu da
+// bloke edebilir. Sadece o gun
 // oynanacak maclara oncelik verilir (2026-09-15: hafta sonu yogunlasan
 // mac trafiginde 3 gunluk pencerenin tamamini arastirmaya calismak yerine
 // her mac kendi gununde arastirilir - hem kota patlamasini hem 60sn

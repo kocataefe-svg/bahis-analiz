@@ -45,7 +45,11 @@ function parseRetryWaitMs(errorBody: string): number {
   return Math.min(Math.ceil(seconds * 1000) + 250, MAX_RETRY_WAIT_MS);
 }
 
-async function callGroqOnce(apiKey: string, prompt: string): Promise<{ ok: true; content: string } | { ok: false; status: number; body: string }> {
+async function callGroqOnce(
+  apiKey: string,
+  prompt: string,
+  options?: { jsonMode?: boolean; maxTokens?: number },
+): Promise<{ ok: true; content: string } | { ok: false; status: number; body: string }> {
   const res = await fetch(GROQ_API_URL, {
     method: "POST",
     headers: {
@@ -55,15 +59,15 @@ async function callGroqOnce(apiKey: string, prompt: string): Promise<{ ok: true;
     body: JSON.stringify({
       model: GROQ_MODEL,
       messages: [{ role: "user", content: prompt }],
-      response_format: { type: "json_object" },
+      ...(options?.jsonMode === false ? {} : { response_format: { type: "json_object" } }),
       // gpt-oss reasoning modelidir; varsayilan max_completion_tokens (1024)
-      // gizli "reasoning" tokenlarina gidip JSON govdesi bitmeden kesilebiliyor
+      // gizli "reasoning" tokenlarina gidip govde bitmeden kesilebiliyor
       // (canli testte gorulen bir hata). Dusuk reasoning + makul token payi
       // bu riski azaltir - gorev derin akil yurutme gerektirmiyor. Cok
       // yuksek tutmuyoruz cunku Groq'un dakikalik (TPM) limiti bu degeri
       // rezerve ediyor - buyutmek art arda cagrilarda 429'u hizlandirir.
       reasoning_effort: "low",
-      max_completion_tokens: 1500,
+      max_completion_tokens: options?.maxTokens ?? 1500,
     }),
   });
 
@@ -126,4 +130,31 @@ export async function generateMatchAnalysis(input: AnalysisPromptInput): Promise
     teamAnalystPick: normalizePersonaPick(parsed.team_analyst_pick),
     commentatorPick: normalizePersonaPick(parsed.commentator_pick),
   };
+}
+
+/**
+ * generateMatchAnalysis'ten farkli olarak duz metin (JSON degil) uretir -
+ * Arastir ozelliginin Tavily arama sonuclarindan Turkce rapor yazdirmasi
+ * icin kullanilir (bkz. web-research.ts).
+ */
+export async function generateGroqText(prompt: string, maxTokens = 1500): Promise<string | null> {
+  const apiKey = getApiKey();
+
+  try {
+    let result = await callGroqOnce(apiKey, prompt, { jsonMode: false, maxTokens });
+
+    if (!result.ok && result.status === 429) {
+      await sleep(parseRetryWaitMs(result.body));
+      result = await callGroqOnce(apiKey, prompt, { jsonMode: false, maxTokens });
+    }
+
+    if (!result.ok) {
+      console.warn(`Groq metin uretimi basarisiz (API hatasi): ${result.status} ${result.body}`);
+      return null;
+    }
+    return result.content;
+  } catch (err) {
+    console.warn("Groq metin uretimi basarisiz (ag hatasi):", err);
+    return null;
+  }
 }

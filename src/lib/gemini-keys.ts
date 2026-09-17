@@ -1,10 +1,11 @@
 /**
- * Gemini'nin ucretsiz katman kotasi (ozellikle Arastir'in kullandigi Google
- * Search grounding) tek bir Google Cloud projesi/anahtari icin kucuk ve
- * paylasimli - 5 kisi + gunluk otomatik arastirma cron'u ayni havuzu hizla
- * tuketebiliyor. Birden fazla ayri projeden anahtar eklenip GEMINI_API_KEYS'e
- * virgulle yazilirsa, kota dolan anahtardan bir sonrakine otomatik gecilir -
- * yedekler sadece ilki (ve varsa ikincisi, ucuncusu...) dolunca devreye girer.
+ * Bahis Analizcisi/Surpriz Yorumcu personalarinin (gemini-analysis.ts) duz
+ * JSON uretimi icin kullanilir. Arastir ozelligi artik Gemini KULLANMIYOR
+ * (bkz. web-research.ts) - eskiden ikisi ayni dar/paylasimli grounding
+ * kotasini paylasiyordu, bu yuzden Arastir surekli kota hatasi veriyordu.
+ * Yine de tek bir Google Cloud projesi/anahtarinin ucretsiz kotasi kisitli
+ * olabilir; birden fazla ayri projeden anahtar eklenip GEMINI_API_KEYS'e
+ * virgulle yazilirsa, kota dolan anahtardan bir sonrakine otomatik gecilir.
  */
 export function getGeminiApiKeys(): string[] {
   const multi = process.env.GEMINI_API_KEYS;

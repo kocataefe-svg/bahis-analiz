@@ -12,7 +12,7 @@ vi.mock("@/lib/db/ai-analyses", () => ({
 }));
 vi.mock("@/lib/analysis-orchestrator", () => ({ generateFullAnalysis: vi.fn() }));
 vi.mock("@/lib/odds-enrichment", () => ({ ensureExtraMarketsOdds: vi.fn() }));
-vi.mock("@/lib/gemini-research", () => ({ researchMatchContext: vi.fn(), RESEARCH_MODEL: "gemini-3.5-flash-lite" }));
+vi.mock("@/lib/web-research", () => ({ researchMatchContext: vi.fn(), RESEARCH_MODEL: "tavily+openai/gpt-oss-20b" }));
 
 import { POST } from "./route";
 import { getUpcomingMatches } from "@/lib/db/matches";
@@ -22,7 +22,7 @@ import { getActiveLeagues } from "@/lib/db/leagues";
 import { getLatestAnalysisGeneratedAt, needsFreshAnalysis, insertAiAnalysis } from "@/lib/db/ai-analyses";
 import { generateFullAnalysis } from "@/lib/analysis-orchestrator";
 import { ensureExtraMarketsOdds } from "@/lib/odds-enrichment";
-import { researchMatchContext } from "@/lib/gemini-research";
+import { researchMatchContext } from "@/lib/web-research";
 
 function makeRequest(authHeader?: string): Request {
   const headers = new Headers();
