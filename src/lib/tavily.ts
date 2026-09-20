@@ -34,7 +34,11 @@ export async function searchWeb(query: string, maxResults = 8): Promise<TavilySe
       body: JSON.stringify({
         api_key: apiKey,
         query,
-        search_depth: "advanced",
+        // "basic" 1 kredi, "advanced" 2 kredi harcar (ucretsiz plan ayda
+        // 1000 kredi) - ihtiyacimiz derin arastirma degil, takim
+        // haberleri/sakatlik/son mac gibi yuzeysel ama guncel bilgi,
+        // bu yuzden kotayi 2 katina cikarmak icin basic yeterli.
+        search_depth: "basic",
         max_results: maxResults,
       }),
     });
