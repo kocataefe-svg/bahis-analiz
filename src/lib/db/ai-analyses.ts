@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ResolvedPersonaPick } from "../persona-pick";
+import { coerceResolvedPersonaPicks, type ResolvedPersonaPick } from "../persona-pick";
 
 export interface AiAnalysisInsertRow {
   match_id: string;
@@ -66,6 +66,10 @@ export async function getLatestAnalysis(supabase: SupabaseClient, matchId: strin
 
   if (error) throw new Error(`AI analizi alinamadi: ${error.message}`);
 
+  // Pick kolonlari JSONB - diziye gecmeden ONCE kaydedilmis eski satirlarda
+  // hala tek bir {market,outcome,price} obje (veya null) olabilir, bu
+  // yuzden "unknown" olarak okuyup coerceResolvedPersonaPicks ile her
+  // zaman gecerli bir diziye ceviriyoruz (bkz. persona-pick.ts).
   interface RawRow {
     team_analyst_text: string;
     betting_analyst_text: string;
@@ -74,10 +78,10 @@ export async function getLatestAnalysis(supabase: SupabaseClient, matchId: strin
     summary_text: string;
     model_used: string;
     generated_at: string;
-    team_analyst_pick: ResolvedPersonaPick[];
-    commentator_pick: ResolvedPersonaPick[];
-    betting_analyst_pick: ResolvedPersonaPick[];
-    surprise_combo_pick: ResolvedPersonaPick[];
+    team_analyst_pick: unknown;
+    commentator_pick: unknown;
+    betting_analyst_pick: unknown;
+    surprise_combo_pick: unknown;
   }
 
   const rows = (data ?? []) as RawRow[];
@@ -92,10 +96,10 @@ export async function getLatestAnalysis(supabase: SupabaseClient, matchId: strin
     summaryText: row.summary_text,
     modelUsed: row.model_used,
     generatedAt: row.generated_at,
-    teamAnalystPick: row.team_analyst_pick ?? [],
-    commentatorPick: row.commentator_pick ?? [],
-    bettingAnalystPick: row.betting_analyst_pick ?? [],
-    surpriseComboPick: row.surprise_combo_pick ?? [],
+    teamAnalystPick: coerceResolvedPersonaPicks(row.team_analyst_pick),
+    commentatorPick: coerceResolvedPersonaPicks(row.commentator_pick),
+    bettingAnalystPick: coerceResolvedPersonaPicks(row.betting_analyst_pick),
+    surpriseComboPick: coerceResolvedPersonaPicks(row.surprise_combo_pick),
   };
 }
 
@@ -129,10 +133,10 @@ export async function getLatestAnalysesByMatchIds(
     summary_text: string;
     model_used: string;
     generated_at: string;
-    team_analyst_pick: ResolvedPersonaPick[];
-    commentator_pick: ResolvedPersonaPick[];
-    betting_analyst_pick: ResolvedPersonaPick[];
-    surprise_combo_pick: ResolvedPersonaPick[];
+    team_analyst_pick: unknown;
+    commentator_pick: unknown;
+    betting_analyst_pick: unknown;
+    surprise_combo_pick: unknown;
   }
 
   const map = new Map<string, LatestAnalysis>();
@@ -146,10 +150,10 @@ export async function getLatestAnalysesByMatchIds(
       summaryText: row.summary_text,
       modelUsed: row.model_used,
       generatedAt: row.generated_at,
-      teamAnalystPick: row.team_analyst_pick ?? [],
-      commentatorPick: row.commentator_pick ?? [],
-      bettingAnalystPick: row.betting_analyst_pick ?? [],
-      surpriseComboPick: row.surprise_combo_pick ?? [],
+      teamAnalystPick: coerceResolvedPersonaPicks(row.team_analyst_pick),
+      commentatorPick: coerceResolvedPersonaPicks(row.commentator_pick),
+      bettingAnalystPick: coerceResolvedPersonaPicks(row.betting_analyst_pick),
+      surpriseComboPick: coerceResolvedPersonaPicks(row.surprise_combo_pick),
     });
   }
   return map;

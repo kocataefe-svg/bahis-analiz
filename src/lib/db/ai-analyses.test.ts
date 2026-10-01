@@ -149,6 +149,36 @@ describe("getLatestAnalysis", () => {
     });
   });
 
+  it("coerces a legacy single-object pick (saved before picks became arrays) into a one-element array", async () => {
+    const limit = vi.fn().mockResolvedValue({
+      data: [
+        {
+          team_analyst_text: "takim analizi",
+          betting_analyst_text: "bahis analizi",
+          commentator_text: "yorum",
+          surprise_pick_text: "surpriz tahmin",
+          summary_text: "ozet",
+          model_used: "openai/gpt-oss-20b",
+          generated_at: "2026-09-13T10:00:00Z",
+          team_analyst_pick: { market: "h2h", outcome: "Arsenal", price: 1.8 },
+          commentator_pick: null,
+          betting_analyst_pick: null,
+          surprise_combo_pick: null,
+        },
+      ],
+      error: null,
+    });
+    const order = vi.fn(() => ({ limit }));
+    const eq = vi.fn(() => ({ order }));
+    const select = vi.fn(() => ({ eq }));
+    const from = vi.fn(() => ({ select }));
+
+    const result = await getLatestAnalysis({ from } as any, "m1");
+
+    expect(result?.teamAnalystPick).toEqual([{ market: "h2h", outcome: "Arsenal", price: 1.8 }]);
+    expect(result?.commentatorPick).toEqual([]);
+  });
+
   it("returns null when no analysis exists yet", async () => {
     const limit = vi.fn().mockResolvedValue({ data: [], error: null });
     const order = vi.fn(() => ({ limit }));

@@ -39,3 +39,21 @@ export function normalizePersonaPicks(value: unknown): RawPersonaPick[] {
   }
   return picks;
 }
+
+function isValidResolvedPick(value: unknown): value is ResolvedPersonaPick {
+  if (!isValidRawPick(value)) return false;
+  return typeof (value as unknown as Record<string, unknown>).price === "number";
+}
+
+/**
+ * ai_analyses tablosundaki bir pick kolonunu okurken kullanilir - bu
+ * kolonlar JSONB oldugundan, bu alanlar diziye donusturulmeden once
+ * kaydedilmis ESKI satirlarda hala tek bir {market,outcome,price} objesi
+ * (veya null) olabilir. Deger ne sekilde olursa olsun (dizi, tek obje,
+ * null/eksik) her zaman gecerli bir dizi dondurur - UI'daki .map()
+ * cagrilarinin eski satirlarda patlamamasini saglar.
+ */
+export function coerceResolvedPersonaPicks(value: unknown): ResolvedPersonaPick[] {
+  const candidates = Array.isArray(value) ? value : [value];
+  return candidates.filter(isValidResolvedPick);
+}
