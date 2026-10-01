@@ -113,11 +113,17 @@
 }
 
 .personaCard {
-  position: relative;
-  padding-bottom: 26px;
   padding-left: 12px;
   border-left: 3px solid var(--border);
   animation: fade-slide-up var(--duration-base) var(--ease-out) both;
+}
+
+.pickRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 8px;
 }
 
 .personaCard:nth-of-type(1) {

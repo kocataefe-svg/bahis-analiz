@@ -58,12 +58,12 @@ describe("generateMatchAnalysis", () => {
       teamAnalystText: "takim analizi",
       commentatorText: "yorum",
       summaryText: "ozet",
-      teamAnalystPick: null,
-      commentatorPick: null,
+      teamAnalystPick: [],
+      commentatorPick: [],
     });
   });
 
-  it("parses valid team_analyst_pick/commentator_pick fields, and drops malformed ones to null", async () => {
+  it("parses valid team_analyst_pick/commentator_pick fields (single object or array), and drops malformed ones", async () => {
     mockFetchOnce({
       choices: [
         {
@@ -72,7 +72,7 @@ describe("generateMatchAnalysis", () => {
               team_analyst_text: "takim analizi",
               commentator_text: "yorum",
               summary_text: "ozet",
-              team_analyst_pick: { market: "h2h", outcome: "Arsenal" },
+              team_analyst_pick: [{ market: "h2h", outcome: "Arsenal" }, { market: "totals", outcome: "Over 2.5" }],
               commentator_pick: "gecersiz sekil",
             }),
           },
@@ -82,8 +82,11 @@ describe("generateMatchAnalysis", () => {
 
     const result = await generateMatchAnalysis(minimalInput);
 
-    expect(result?.teamAnalystPick).toEqual({ market: "h2h", outcome: "Arsenal" });
-    expect(result?.commentatorPick).toBeNull();
+    expect(result?.teamAnalystPick).toEqual([
+      { market: "h2h", outcome: "Arsenal" },
+      { market: "totals", outcome: "Over 2.5" },
+    ]);
+    expect(result?.commentatorPick).toEqual([]);
   });
 
   it("returns null when the request fails", async () => {

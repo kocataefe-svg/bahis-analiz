@@ -29,14 +29,14 @@ describe("generateFullAnalysis", () => {
       teamAnalystText: "takim",
       commentatorText: "yorum",
       summaryText: "ozet",
-      teamAnalystPick: null,
-      commentatorPick: null,
+      teamAnalystPick: [],
+      commentatorPick: [],
     });
     vi.mocked(generateBettingAndSurpriseAnalysis).mockResolvedValue({
       bettingAnalystText: "bahis",
       surprisePickText: "surpriz",
-      bettingAnalystPick: null,
-      surpriseComboPick: null,
+      bettingAnalystPick: [],
+      surpriseComboPick: [],
     });
 
     const result = await generateFullAnalysis(minimalInput);
@@ -48,10 +48,10 @@ describe("generateFullAnalysis", () => {
       betting_analyst_text: "bahis",
       surprise_pick_text: "surpriz",
       model_used: "openai/gpt-oss-20b+gemini-3.5-flash-lite",
-      team_analyst_pick: null,
-      commentator_pick: null,
-      betting_analyst_pick: null,
-      surprise_combo_pick: null,
+      team_analyst_pick: [],
+      commentator_pick: [],
+      betting_analyst_pick: [],
+      surprise_combo_pick: [],
     });
   });
 
@@ -60,22 +60,22 @@ describe("generateFullAnalysis", () => {
       teamAnalystText: "takim",
       commentatorText: "yorum",
       summaryText: "ozet",
-      teamAnalystPick: { market: "h2h", outcome: "Arsenal" },
-      commentatorPick: { market: "h2h", outcome: "Chelsea" }, // odds'ta yok
+      teamAnalystPick: [{ market: "h2h", outcome: "Arsenal" }],
+      commentatorPick: [{ market: "h2h", outcome: "Chelsea" }], // odds'ta yok
     });
     vi.mocked(generateBettingAndSurpriseAnalysis).mockResolvedValue({
       bettingAnalystText: "bahis",
       surprisePickText: "surpriz",
-      bettingAnalystPick: { market: "h2h", outcome: "Arsenal" },
-      surpriseComboPick: null,
+      bettingAnalystPick: [{ market: "h2h", outcome: "Arsenal" }],
+      surpriseComboPick: [],
     });
 
     const result = await generateFullAnalysis(minimalInput);
 
-    expect(result!.team_analyst_pick).toEqual({ market: "h2h", outcome: "Arsenal", price: 1.8 });
-    expect(result!.commentator_pick).toBeNull();
-    expect(result!.betting_analyst_pick).toEqual({ market: "h2h", outcome: "Arsenal", price: 1.8 });
-    expect(result!.surprise_combo_pick).toBeNull();
+    expect(result!.team_analyst_pick).toEqual([{ market: "h2h", outcome: "Arsenal", price: 1.8 }]);
+    expect(result!.commentator_pick).toEqual([]);
+    expect(result!.betting_analyst_pick).toEqual([{ market: "h2h", outcome: "Arsenal", price: 1.8 }]);
+    expect(result!.surprise_combo_pick).toEqual([]);
   });
 
   it("returns null when the core (Groq) call fails, regardless of the extra (Gemini) call", async () => {
@@ -83,8 +83,8 @@ describe("generateFullAnalysis", () => {
     vi.mocked(generateBettingAndSurpriseAnalysis).mockResolvedValue({
       bettingAnalystText: "bahis",
       surprisePickText: "surpriz",
-      bettingAnalystPick: null,
-      surpriseComboPick: null,
+      bettingAnalystPick: [],
+      surpriseComboPick: [],
     });
 
     const result = await generateFullAnalysis(minimalInput);
@@ -96,8 +96,8 @@ describe("generateFullAnalysis", () => {
       teamAnalystText: "takim",
       commentatorText: "yorum",
       summaryText: "ozet",
-      teamAnalystPick: null,
-      commentatorPick: null,
+      teamAnalystPick: [],
+      commentatorPick: [],
     });
     vi.mocked(generateBettingAndSurpriseAnalysis).mockResolvedValue(null);
 
@@ -108,7 +108,39 @@ describe("generateFullAnalysis", () => {
     expect(result!.betting_analyst_text).toBeTruthy();
     expect(result!.surprise_pick_text).toBe("");
     expect(result!.model_used).toBe("openai/gpt-oss-20b");
-    expect(result!.betting_analyst_pick).toBeNull();
+    expect(result!.betting_analyst_pick).toEqual([]);
+  });
+
+  it("resolves multiple picks from the same persona when they come from different markets", async () => {
+    vi.mocked(generateMatchAnalysis).mockResolvedValue({
+      teamAnalystText: "takim",
+      commentatorText: "yorum",
+      summaryText: "ozet",
+      teamAnalystPick: [
+        { market: "h2h", outcome: "Arsenal" },
+        { market: "totals", outcome: "Over 2.5" },
+      ],
+      commentatorPick: [],
+    });
+    vi.mocked(generateBettingAndSurpriseAnalysis).mockResolvedValue({
+      bettingAnalystText: "bahis",
+      surprisePickText: "surpriz",
+      bettingAnalystPick: [],
+      surpriseComboPick: [],
+    });
+
+    const result = await generateFullAnalysis({
+      ...minimalInput,
+      odds: [
+        ...minimalInput.odds,
+        { market: "totals", bookmaker: "pinnacle", outcome: "Over 2.5", price: 1.9 },
+      ],
+    });
+
+    expect(result!.team_analyst_pick).toEqual([
+      { market: "h2h", outcome: "Arsenal", price: 1.8 },
+      { market: "totals", outcome: "Over 2.5", price: 1.9 },
+    ]);
   });
 
   it("runs both providers concurrently, not sequentially", async () => {
@@ -117,13 +149,13 @@ describe("generateFullAnalysis", () => {
       order.push("groq-start");
       await new Promise((r) => setTimeout(r, 10));
       order.push("groq-end");
-      return { teamAnalystText: "t", commentatorText: "c", summaryText: "s", teamAnalystPick: null, commentatorPick: null };
+      return { teamAnalystText: "t", commentatorText: "c", summaryText: "s", teamAnalystPick: [], commentatorPick: [] };
     });
     vi.mocked(generateBettingAndSurpriseAnalysis).mockImplementation(async () => {
       order.push("gemini-start");
       await new Promise((r) => setTimeout(r, 10));
       order.push("gemini-end");
-      return { bettingAnalystText: "b", surprisePickText: "sp", bettingAnalystPick: null, surpriseComboPick: null };
+      return { bettingAnalystText: "b", surprisePickText: "sp", bettingAnalystPick: [], surpriseComboPick: [] };
     });
 
     await generateFullAnalysis(minimalInput);

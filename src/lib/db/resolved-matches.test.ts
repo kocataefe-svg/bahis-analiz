@@ -34,10 +34,10 @@ describe("getResolvedMatchesForStats", () => {
             summaryText: "d",
             modelUsed: "openai/gpt-oss-20b",
             generatedAt: "2026-09-14T10:00:00Z",
-            teamAnalystPick: { market: "h2h", outcome: "Arsenal", price: 1.8 },
-            commentatorPick: null,
-            bettingAnalystPick: null,
-            surpriseComboPick: null,
+            teamAnalystPick: [{ market: "h2h", outcome: "Arsenal", price: 1.8 }],
+            commentatorPick: [],
+            bettingAnalystPick: [],
+            surpriseComboPick: [],
           },
         ],
       ]),
@@ -51,10 +51,10 @@ describe("getResolvedMatchesForStats", () => {
         awayTeam: "Chelsea",
         homeScore: 2,
         awayScore: 1,
-        teamAnalystPick: { market: "h2h", outcome: "Arsenal", price: 1.8 },
-        commentatorPick: null,
-        bettingAnalystPick: null,
-        surpriseComboPick: null,
+        teamAnalystPick: [{ market: "h2h", outcome: "Arsenal", price: 1.8 }],
+        commentatorPick: [],
+        bettingAnalystPick: [],
+        surpriseComboPick: [],
       },
     ]);
   });
@@ -68,7 +68,7 @@ describe("getResolvedMatchesForStats", () => {
     expect(result).toEqual([]);
   });
 
-  it("defaults all picks to null when no analysis was ever generated for the match", async () => {
+  it("defaults all picks to an empty array when no analysis was ever generated for the match", async () => {
     vi.mocked(getAllMatchResults).mockResolvedValue([{ matchId: "m1", homeScore: 1, awayScore: 1 }]);
     vi.mocked(getMatchTeamsByIds).mockResolvedValue(
       new Map([["m1", { homeTeam: "Arsenal", awayTeam: "Chelsea" }]]),
@@ -83,10 +83,10 @@ describe("getResolvedMatchesForStats", () => {
         awayTeam: "Chelsea",
         homeScore: 1,
         awayScore: 1,
-        teamAnalystPick: null,
-        commentatorPick: null,
-        bettingAnalystPick: null,
-        surpriseComboPick: null,
+        teamAnalystPick: [],
+        commentatorPick: [],
+        bettingAnalystPick: [],
+        surpriseComboPick: [],
       },
     ]);
   });

@@ -30,10 +30,10 @@ export async function getResolvedMatchesForStats(supabase: SupabaseClient): Prom
       awayTeam: teams.awayTeam,
       homeScore: result.homeScore,
       awayScore: result.awayScore,
-      teamAnalystPick: analysis?.teamAnalystPick ?? null,
-      commentatorPick: analysis?.commentatorPick ?? null,
-      bettingAnalystPick: analysis?.bettingAnalystPick ?? null,
-      surpriseComboPick: analysis?.surpriseComboPick ?? null,
+      teamAnalystPick: analysis?.teamAnalystPick ?? [],
+      commentatorPick: analysis?.commentatorPick ?? [],
+      bettingAnalystPick: analysis?.bettingAnalystPick ?? [],
+      surpriseComboPick: analysis?.surpriseComboPick ?? [],
     });
   }
   return resolved;

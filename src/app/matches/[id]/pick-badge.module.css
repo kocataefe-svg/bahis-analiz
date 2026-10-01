@@ -1,7 +1,4 @@
 .badge {
-  position: absolute;
-  bottom: 0;
-  right: 0;
   background: var(--surface-2);
   border: 1px solid var(--odds);
   border-radius: 6px;

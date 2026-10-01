@@ -77,7 +77,10 @@ const HIGHLIGHT_RULE =
   "ONEMLI ISIM VURGUSU: Bir oyuncunun sakatligi/cezasi/eksikligi mac sonucunu onemli olcude etkileyebilecek kadar kritikse (orn. takimin en golcu oyuncusu sakat), o oyuncunun adini metinde **isim** seklinde (cift yildiz arasinda) isaretle. Sadece gercekten kritik olanlari isaretle - her ismi isaretlemek vurguyu anlamsizlastirir, arastirma yoksa hic isaretleme yapma.";
 
 const PICK_FIELD_RULE =
-  "YAPISAL TAHMIN ALANI: Metnindeki yoruma ek olarak, en guvendigin TEK pazar+sonuc ciftini ayri bir JSON alaninda belirt. Bu deger asagida sana verilen oran satirlarindan BIRIYLE birebir eslesmeli: market alani tam olarak su anahtarlardan biri olmali (h2h, totals, btts, h2h_h1, totals_h1, btts_h1, spreads, player_goal_scorer_anytime), outcome alani ise o pazardaki oran satirinin outcome metniyle AYNEN (harfi harfine) eslesmeli. Hicbir pazar icin yeterince emin degilsen veya oran verisi yoksa bu alani null birak - uydurma bir market veya outcome YAZMA.";
+  "YAPISAL TAHMIN ALANI: Metnindeki yoruma ek olarak, en guvendigin 1 veya 2 pazar+sonuc ciftini ayri bir JSON dizisinde belirt (orn. [{\"market\":\"h2h\",\"outcome\":\"Galatasaray\"}, {\"market\":\"totals\",\"outcome\":\"Over 2.5\"}]). Ikinci bir pick EKLEMEK ICIN ZORUNLU DEGIL - sadece gercekten eklemeye deger baska bir guvendigin sonuc varsa ekle, yoksa diziyi tek elemanli birak. Her eleman asagida sana verilen oran satirlarindan BIRIYLE birebir eslesmeli: market alani tam olarak su anahtarlardan biri olmali (h2h, totals, btts, h2h_h1, totals_h1, btts_h1, spreads, player_goal_scorer_anytime), outcome alani ise o pazardaki oran satirinin outcome metniyle AYNEN (harfi harfine) eslesmeli. Iki eleman eklersen FARKLI pazarlardan olmali (orn. h2h + totals), asla ayni pazarin iki farkli/celisen sonucunu birlikte verme. Hicbir pazar icin yeterince emin degilsen veya oran verisi yoksa bos dizi [] birak - uydurma bir market veya outcome YAZMA.";
+
+const PLAIN_LANGUAGE_RULE =
+  "SADE DIL KURALI: Yorumlarinda 'KG pazarinda', '2.5 ust pazarinda', 'bu pazarda', 'taraf bahsi pazarinda' gibi teknik/borsa dili KULLANMA - bu bir bahis sitesi arayuzu degil, sohbet eder gibi yaz. Sonucu dogrudan soyle: 'KG var gibi gorunuyor', '2.5 ust ihtimali yuksek', 'Galatasaray kazanir' de, 'KG pazarinda Var ihtimali agir basiyor' gibi dolambacli bir cumle KURMA. 'Pazar' kelimesini hic kullanma.";
 
 const ENTERTAINMENT_FRAMING_RULE =
   "TON: Bu uygulama tamamen eglence ve analiz amaclidir, gercek para icermez ve sen bir yatirim/finansal danisman degilsin - bahis tavsiyesi verme sorumlulugun yok. Bu yuzden 'yatirim tavsiyesi degildir', 'garanti edilemez', 'kesin bir sey soylemek zor' gibi savunmaci/hukuki hedge ifadeleri KULLANMA. Kendinden emin, net ve eglenceli bir spor yorumcusu gibi yaz - tahmin etmek senin isin, cekinme.";
@@ -109,13 +112,14 @@ export function buildTeamAndCommentaryPrompt(input: AnalysisPromptInput): string
     NO_FABRICATION_RULE,
     HIGHLIGHT_RULE,
     PICK_FIELD_RULE,
+    PLAIN_LANGUAGE_RULE,
     ENTERTAINMENT_FRAMING_RULE,
     COMPETITIVE_FRAMING_RULE,
     FREE_PREDICTION_RULE,
     "",
     buildSharedContext(input),
     "",
-    "Yanitini SADECE gecerli bir JSON nesnesi olarak ver, baska hicbir metin ekleme. JSON tam olarak su alanlari icermeli: team_analyst_text, commentator_text, summary_text (hepsi string), team_analyst_pick, commentator_pick (her biri {\"market\": string, \"outcome\": string} veya null).",
+    "Yanitini SADECE gecerli bir JSON nesnesi olarak ver, baska hicbir metin ekleme. JSON tam olarak su alanlari icermeli: team_analyst_text, commentator_text, summary_text (hepsi string), team_analyst_pick, commentator_pick (her biri bir dizi: 0, 1 veya 2 eleman, her eleman {\"market\": string, \"outcome\": string}; hic pick yoksa bos dizi []).",
   ].join("\n");
 }
 
@@ -133,13 +137,14 @@ export function buildBettingAndSurprisePrompt(input: AnalysisPromptInput): strin
     NO_FABRICATION_RULE,
     HIGHLIGHT_RULE,
     PICK_FIELD_RULE,
-    "surprise_combo_pick icin: onerdigin kombinasyonun iki bacagindan EN ONE CIKAN/en carpici olanini (tek market+outcome) sec, ikisini ayni alanda birlestirmeye calisma.",
+    PLAIN_LANGUAGE_RULE,
+    "surprise_combo_pick icin: onerdigin kombinasyonun iki bacagi FARKLI pazarlardan oldugu icin (orn. h2h + btts) ikisini de diziye ayri eleman olarak ekleyebilirsin - tek birini secmek zorunda degilsin, ama ikisi de gercekten asagidaki oran satirlarindan birine karsilik gelmeli.",
     ENTERTAINMENT_FRAMING_RULE,
     COMPETITIVE_FRAMING_RULE,
     FREE_PREDICTION_RULE,
     "",
     buildSharedContext(input),
     "",
-    "Yanitini SADECE gecerli bir JSON nesnesi olarak ver, baska hicbir metin ekleme. JSON tam olarak su alanlari icermeli: betting_analyst_text, surprise_pick_text (hepsi string), betting_analyst_pick, surprise_combo_pick (her biri {\"market\": string, \"outcome\": string} veya null).",
+    "Yanitini SADECE gecerli bir JSON nesnesi olarak ver, baska hicbir metin ekleme. JSON tam olarak su alanlari icermeli: betting_analyst_text, surprise_pick_text (hepsi string), betting_analyst_pick, surprise_combo_pick (her biri bir dizi: 0, 1 veya 2 eleman, her eleman {\"market\": string, \"outcome\": string}; hic pick yoksa bos dizi []).",
   ].join("\n");
 }

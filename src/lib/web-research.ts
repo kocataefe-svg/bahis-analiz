@@ -36,7 +36,7 @@ function buildReportPrompt(input: ResearchMatchInput, results: TavilySearchResul
     `${input.homeTeam} - ${input.awayTeam} macini arastir (${input.kickoffAt} tarihli).`,
     "Asagida bir arama motorundan gelen sonuclar var. SADECE bu sonuclarda gecen bilgiyi kullanarak Turkce raporla:",
     "1) Her iki takimin bilinen sakat/cezali oyunculari",
-    "2) Her iki takimin son 5 resmi mac sonucu (rakip, skor, tarih)",
+    "2) Her iki takimin son 5 resmi mac sonucu (rakip, skor, tarih). HER SATIRIN BASINA o takim acisindan sonucu gosteren bir isaret koy: kazandiysa '✓', kaybettiyse '✗', berabere kaldiysa '=' (orn. '✓ Fenerbahce 2-0 Konyaspor (12 Eyl)').",
     "3) Bu iki takimin birbirine karsi son karsilasmalarindan 1-2 ornek",
     "Arama sonuclarinda gecmeyen veya emin olmadigin bilgiyi acikca 'bulunamadi' olarak belirt, uydurma.",
     "",

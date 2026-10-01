@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { buildBettingAndSurprisePrompt, type AnalysisPromptInput } from "./analysis-prompt";
-import { normalizePersonaPick, type RawPersonaPick } from "./persona-pick";
+import { normalizePersonaPicks, type RawPersonaPick } from "./persona-pick";
 import { callWithGeminiKeyFallback } from "./gemini-keys";
 
 /** Bahis Analizcisi + Surpriz Yorumcu - "sayisal agirlikli" iki persona (bkz. analysis-prompt.ts). */
@@ -9,8 +9,8 @@ export const GEMINI_ANALYSIS_MODEL = "gemini-3.5-flash-lite";
 export interface BettingAndSurpriseResult {
   bettingAnalystText: string;
   surprisePickText: string;
-  bettingAnalystPick: RawPersonaPick | null;
-  surpriseComboPick: RawPersonaPick | null;
+  bettingAnalystPick: RawPersonaPick[];
+  surpriseComboPick: RawPersonaPick[];
 }
 
 interface RawJson {
@@ -20,11 +20,18 @@ interface RawJson {
   surprise_combo_pick?: unknown;
 }
 
+// En fazla 2 eleman - normalizePersonaPicks ayni siniri zaten uyguluyor, bu
+// sadece modele beklenen sekli acikca gostermek icin.
 const PICK_SCHEMA = {
-  type: ["object", "null"],
-  properties: {
-    market: { type: "string" },
-    outcome: { type: "string" },
+  type: "array",
+  maxItems: 2,
+  items: {
+    type: "object",
+    properties: {
+      market: { type: "string" },
+      outcome: { type: "string" },
+    },
+    required: ["market", "outcome"],
   },
 };
 
@@ -89,7 +96,7 @@ export async function generateBettingAndSurpriseAnalysis(
   return {
     bettingAnalystText: parsed.betting_analyst_text,
     surprisePickText: parsed.surprise_pick_text,
-    bettingAnalystPick: normalizePersonaPick(parsed.betting_analyst_pick),
-    surpriseComboPick: normalizePersonaPick(parsed.surprise_combo_pick),
+    bettingAnalystPick: normalizePersonaPicks(parsed.betting_analyst_pick),
+    surpriseComboPick: normalizePersonaPicks(parsed.surprise_combo_pick),
   };
 }

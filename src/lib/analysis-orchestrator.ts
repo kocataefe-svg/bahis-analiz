@@ -12,28 +12,31 @@ export interface FullAnalysis {
   surprise_pick_text: string;
   summary_text: string;
   model_used: string;
-  team_analyst_pick: ResolvedPersonaPick | null;
-  commentator_pick: ResolvedPersonaPick | null;
-  betting_analyst_pick: ResolvedPersonaPick | null;
-  surprise_combo_pick: ResolvedPersonaPick | null;
+  team_analyst_pick: ResolvedPersonaPick[];
+  commentator_pick: ResolvedPersonaPick[];
+  betting_analyst_pick: ResolvedPersonaPick[];
+  surprise_combo_pick: ResolvedPersonaPick[];
 }
 
 const BETTING_FALLBACK_TEXT = "Bahis analizi bu calisma icin uretilemedi.";
 
 /**
- * Modelin verdigi {market, outcome} pick'ini gercek oran verisiyle
- * eslestirip fiyatini bulur - model hicbir zaman fiyat uretmiyor (bu
+ * Modelin verdigi {market, outcome} picklerini gercek oran verisiyle
+ * eslestirip fiyatlarini bulur - model hicbir zaman fiyat uretmiyor (bu
  * NO_FABRICATION_RULE'un bir parcasi), fiyat her zaman bizim elimizdeki
- * gercek oran satirindan geliyor. Eslesme bulunamazsa (model prompttaki
- * kurala ragmen var olmayan bir outcome uydurmus olabilir) pick tumden
- * atilir - kupona sahte bir fiyatla eklenebilecek bir sey gostermektense
- * hic gostermemek daha guvenli.
+ * gercek oran satirindan geliyor. Eslesme bulunamayan bir pick (model
+ * prompttaki kurala ragmen var olmayan bir outcome uydurmus olabilir)
+ * tumden atilir - kupona sahte bir fiyatla eklenebilecek bir sey
+ * gostermektense hic gostermemek daha guvenli.
  */
-function resolvePick(pick: RawPersonaPick | null, odds: AnalysisPromptInput["odds"]): ResolvedPersonaPick | null {
-  if (!pick) return null;
-  const match = odds.find((o) => o.market === pick.market && o.outcome === pick.outcome);
-  if (!match) return null;
-  return { market: pick.market, outcome: pick.outcome, price: match.price };
+function resolvePicks(picks: RawPersonaPick[], odds: AnalysisPromptInput["odds"]): ResolvedPersonaPick[] {
+  const resolved: ResolvedPersonaPick[] = [];
+  for (const pick of picks) {
+    const match = odds.find((o) => o.market === pick.market && o.outcome === pick.outcome);
+    if (!match) continue;
+    resolved.push({ market: pick.market, outcome: pick.outcome, price: match.price });
+  }
+  return resolved;
 }
 
 /**
@@ -56,9 +59,9 @@ export async function generateFullAnalysis(input: AnalysisPromptInput): Promise<
     betting_analyst_text: extra?.bettingAnalystText ?? BETTING_FALLBACK_TEXT,
     surprise_pick_text: extra?.surprisePickText ?? "",
     model_used: extra ? `${GROQ_MODEL}+${GEMINI_ANALYSIS_MODEL}` : GROQ_MODEL,
-    team_analyst_pick: resolvePick(core.teamAnalystPick, input.odds),
-    commentator_pick: resolvePick(core.commentatorPick, input.odds),
-    betting_analyst_pick: resolvePick(extra?.bettingAnalystPick ?? null, input.odds),
-    surprise_combo_pick: resolvePick(extra?.surpriseComboPick ?? null, input.odds),
+    team_analyst_pick: resolvePicks(core.teamAnalystPick, input.odds),
+    commentator_pick: resolvePicks(core.commentatorPick, input.odds),
+    betting_analyst_pick: resolvePicks(extra?.bettingAnalystPick ?? [], input.odds),
+    surprise_combo_pick: resolvePicks(extra?.surpriseComboPick ?? [], input.odds),
   };
 }

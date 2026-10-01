@@ -161,8 +161,12 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
               <p>
                 <HighlightedText text={analysis.teamAnalystText} />
               </p>
-              {analysis.teamAnalystPick && (
-                <PickBadge matchId={match.id} matchLabel={matchLabel} pick={analysis.teamAnalystPick} />
+              {analysis.teamAnalystPick.length > 0 && (
+                <div className={styles.pickRow}>
+                  {analysis.teamAnalystPick.map((pick, i) => (
+                    <PickBadge key={i} matchId={match.id} matchLabel={matchLabel} pick={pick} />
+                  ))}
+                </div>
               )}
             </div>
             <div className={styles.personaCard}>
@@ -170,8 +174,12 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
               <p>
                 <HighlightedText text={analysis.bettingAnalystText} />
               </p>
-              {analysis.bettingAnalystPick && (
-                <PickBadge matchId={match.id} matchLabel={matchLabel} pick={analysis.bettingAnalystPick} />
+              {analysis.bettingAnalystPick.length > 0 && (
+                <div className={styles.pickRow}>
+                  {analysis.bettingAnalystPick.map((pick, i) => (
+                    <PickBadge key={i} matchId={match.id} matchLabel={matchLabel} pick={pick} />
+                  ))}
+                </div>
               )}
             </div>
             <div className={styles.personaCard}>
@@ -179,8 +187,12 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
               <p>
                 <HighlightedText text={analysis.commentatorText} />
               </p>
-              {analysis.commentatorPick && (
-                <PickBadge matchId={match.id} matchLabel={matchLabel} pick={analysis.commentatorPick} />
+              {analysis.commentatorPick.length > 0 && (
+                <div className={styles.pickRow}>
+                  {analysis.commentatorPick.map((pick, i) => (
+                    <PickBadge key={i} matchId={match.id} matchLabel={matchLabel} pick={pick} />
+                  ))}
+                </div>
               )}
             </div>
             <div className={styles.personaCard}>
@@ -188,8 +200,12 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
               <p>
                 <HighlightedText text={analysis.surprisePickText} />
               </p>
-              {analysis.surpriseComboPick && (
-                <PickBadge matchId={match.id} matchLabel={matchLabel} pick={analysis.surpriseComboPick} />
+              {analysis.surpriseComboPick.length > 0 && (
+                <div className={styles.pickRow}>
+                  {analysis.surpriseComboPick.map((pick, i) => (
+                    <PickBadge key={i} matchId={match.id} matchLabel={matchLabel} pick={pick} />
+                  ))}
+                </div>
               )}
             </div>
           </div>

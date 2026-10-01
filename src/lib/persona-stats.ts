@@ -6,10 +6,10 @@ export interface ResolvedMatchForStats {
   awayTeam: string;
   homeScore: number;
   awayScore: number;
-  teamAnalystPick: ResolvedPersonaPick | null;
-  commentatorPick: ResolvedPersonaPick | null;
-  bettingAnalystPick: ResolvedPersonaPick | null;
-  surpriseComboPick: ResolvedPersonaPick | null;
+  teamAnalystPick: ResolvedPersonaPick[];
+  commentatorPick: ResolvedPersonaPick[];
+  bettingAnalystPick: ResolvedPersonaPick[];
+  surpriseComboPick: ResolvedPersonaPick[];
 }
 
 export interface PersonaStats {
@@ -29,13 +29,15 @@ function emptyStats(): PersonaStats {
   return { won: 0, lost: 0, total: 0 };
 }
 
-function tally(stats: PersonaStats, pick: ResolvedPersonaPick | null, match: ResolvedMatchForStats): void {
-  if (!pick) return;
-  const status = resolvePickResult(pick, match, match.homeTeam, match.awayTeam);
-  if (status === "unknown") return;
-  stats.total += 1;
-  if (status === "won") stats.won += 1;
-  else stats.lost += 1;
+/** Bir persona'nin bir mac icin verdigi HER pick'i (0-2) bagimsiz bir tahmin olarak sayar. */
+function tally(stats: PersonaStats, picks: ResolvedPersonaPick[], match: ResolvedMatchForStats): void {
+  for (const pick of picks) {
+    const status = resolvePickResult(pick, match, match.homeTeam, match.awayTeam);
+    if (status === "unknown") continue;
+    stats.total += 1;
+    if (status === "won") stats.won += 1;
+    else stats.lost += 1;
+  }
 }
 
 /** Sonucu belli maclar uzerinden her persona icin isabet/kayip sayisini hesaplar. Sadece h2h/totals/btts gibi tam skordan cozulebilen pickler sayilir. */

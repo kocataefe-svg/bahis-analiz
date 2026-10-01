@@ -1,5 +1,5 @@
 import { buildTeamAndCommentaryPrompt, type AnalysisPromptInput } from "./analysis-prompt";
-import { normalizePersonaPick, type RawPersonaPick } from "./persona-pick";
+import { normalizePersonaPicks, type RawPersonaPick } from "./persona-pick";
 
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 export const GROQ_MODEL = "openai/gpt-oss-20b";
@@ -9,8 +9,8 @@ export interface TeamAndCommentaryResult {
   teamAnalystText: string;
   commentatorText: string;
   summaryText: string;
-  teamAnalystPick: RawPersonaPick | null;
-  commentatorPick: RawPersonaPick | null;
+  teamAnalystPick: RawPersonaPick[];
+  commentatorPick: RawPersonaPick[];
 }
 
 interface RawAnalysisJson {
@@ -127,8 +127,8 @@ export async function generateMatchAnalysis(input: AnalysisPromptInput): Promise
     teamAnalystText: parsed.team_analyst_text,
     commentatorText: parsed.commentator_text,
     summaryText: parsed.summary_text,
-    teamAnalystPick: normalizePersonaPick(parsed.team_analyst_pick),
-    commentatorPick: normalizePersonaPick(parsed.commentator_pick),
+    teamAnalystPick: normalizePersonaPicks(parsed.team_analyst_pick),
+    commentatorPick: normalizePersonaPicks(parsed.commentator_pick),
   };
 }
 

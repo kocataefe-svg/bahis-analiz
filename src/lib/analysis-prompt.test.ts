@@ -167,6 +167,18 @@ describe("buildTeamAndCommentaryPrompt (Groq: Takim Analizcisi + Yorumcu)", () =
     expect(prompt).toContain("hem gol hem asist");
     expect(prompt).toContain("YAPISAL pick alanina KESINLIKLE dahil etme");
   });
+
+  it("forbids market-jargon phrasing like 'pazarinda' and asks for plain, direct outcome statements", () => {
+    const prompt = buildTeamAndCommentaryPrompt(baseInput);
+    expect(prompt).toContain("SADE DIL KURALI");
+    expect(prompt).toContain("'Pazar' kelimesini hic kullanma");
+  });
+
+  it("allows the structured pick field to carry up to two different-market picks", () => {
+    const prompt = buildTeamAndCommentaryPrompt(baseInput);
+    expect(prompt).toContain("1 veya 2 pazar+sonuc ciftini");
+    expect(prompt).toContain("bos dizi []");
+  });
 });
 
 describe("buildBettingAndSurprisePrompt (Gemini: Bahis Analizcisi + Surpriz Yorumcu)", () => {
@@ -207,11 +219,11 @@ describe("buildBettingAndSurprisePrompt (Gemini: Bahis Analizcisi + Surpriz Yoru
     expect(prompt).toContain("Ilk yari: ...");
   });
 
-  it("asks for a structured betting_analyst_pick/surprise_combo_pick field, single-leg only for the combo", () => {
+  it("asks for a structured betting_analyst_pick/surprise_combo_pick field, allowing both combo legs as separate array elements", () => {
     const prompt = buildBettingAndSurprisePrompt(baseInput);
     expect(prompt).toContain("betting_analyst_pick");
     expect(prompt).toContain("surprise_combo_pick");
-    expect(prompt).toContain("EN ONE CIKAN");
+    expect(prompt).toContain("FARKLI pazarlardan oldugu icin");
   });
 
   it("forbids defensive investment-advice hedging and frames the personas as competing on accuracy, without naming the other prompt's personas", () => {
@@ -224,5 +236,10 @@ describe("buildBettingAndSurprisePrompt (Gemini: Bahis Analizcisi + Surpriz Yoru
   it("allows one optional free prediction on a market with no odds data", () => {
     const prompt = buildBettingAndSurprisePrompt(baseInput);
     expect(prompt).toContain("SERBEST TAHMIN");
+  });
+
+  it("forbids market-jargon phrasing here too", () => {
+    const prompt = buildBettingAndSurprisePrompt(baseInput);
+    expect(prompt).toContain("SADE DIL KURALI");
   });
 });

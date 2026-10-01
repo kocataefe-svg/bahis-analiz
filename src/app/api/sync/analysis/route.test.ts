@@ -50,10 +50,10 @@ const fullAnalysisResult = {
   surprise_pick_text: "e",
   summary_text: "d",
   model_used: "openai/gpt-oss-20b+gemini-3.5-flash-lite",
-  team_analyst_pick: null,
-  commentator_pick: null,
-  betting_analyst_pick: null,
-  surprise_combo_pick: null,
+  team_analyst_pick: [],
+  commentator_pick: [],
+  betting_analyst_pick: [],
+  surprise_combo_pick: [],
 };
 
 beforeEach(() => {

@@ -7,10 +7,10 @@ function match(overrides: Partial<ResolvedMatchForStats> = {}): ResolvedMatchFor
     awayTeam: "Chelsea",
     homeScore: 2,
     awayScore: 1,
-    teamAnalystPick: null,
-    commentatorPick: null,
-    bettingAnalystPick: null,
-    surpriseComboPick: null,
+    teamAnalystPick: [],
+    commentatorPick: [],
+    bettingAnalystPick: [],
+    surpriseComboPick: [],
     ...overrides,
   };
 }
@@ -26,39 +26,51 @@ describe("computePersonaStats", () => {
 
   it("counts a winning h2h pick for the team analyst", () => {
     const stats = computePersonaStats([
-      match({ teamAnalystPick: { market: "h2h", outcome: "Arsenal", price: 1.8 } }),
+      match({ teamAnalystPick: [{ market: "h2h", outcome: "Arsenal", price: 1.8 }] }),
     ]);
     expect(stats.teamAnalyst).toEqual({ won: 1, lost: 0, total: 1 });
   });
 
   it("counts a losing pick separately per persona", () => {
     const stats = computePersonaStats([
-      match({ commentatorPick: { market: "h2h", outcome: "Chelsea", price: 4.2 } }),
+      match({ commentatorPick: [{ market: "h2h", outcome: "Chelsea", price: 4.2 }] }),
     ]);
     expect(stats.commentator).toEqual({ won: 0, lost: 1, total: 1 });
   });
 
   it("does not count a pick with no resolvable result (e.g. half-time market)", () => {
     const stats = computePersonaStats([
-      match({ bettingAnalystPick: { market: "h2h_h1", outcome: "Arsenal", price: 2.1 } }),
+      match({ bettingAnalystPick: [{ market: "h2h_h1", outcome: "Arsenal", price: 2.1 }] }),
     ]);
     expect(stats.bettingAnalyst).toEqual({ won: 0, lost: 0, total: 0 });
   });
 
-  it("does not count a null pick", () => {
-    const stats = computePersonaStats([match({ surpriseComboPick: null })]);
+  it("does not count an empty pick list", () => {
+    const stats = computePersonaStats([match({ surpriseComboPick: [] })]);
     expect(stats.surpriseCombo).toEqual({ won: 0, lost: 0, total: 0 });
+  });
+
+  it("counts each pick in a multi-pick list independently", () => {
+    const stats = computePersonaStats([
+      match({
+        teamAnalystPick: [
+          { market: "h2h", outcome: "Arsenal", price: 1.8 }, // won (2-1)
+          { market: "totals", outcome: "Under 2.5", price: 2.0 }, // lost (total is 3)
+        ],
+      }),
+    ]);
+    expect(stats.teamAnalyst).toEqual({ won: 1, lost: 1, total: 2 });
   });
 
   it("aggregates across multiple matches", () => {
     const stats = computePersonaStats([
-      match({ teamAnalystPick: { market: "h2h", outcome: "Arsenal", price: 1.8 } }),
+      match({ teamAnalystPick: [{ market: "h2h", outcome: "Arsenal", price: 1.8 }] }),
       match({
         homeTeam: "Liverpool",
         awayTeam: "Everton",
         homeScore: 0,
         awayScore: 1,
-        teamAnalystPick: { market: "h2h", outcome: "Liverpool", price: 1.5 },
+        teamAnalystPick: [{ market: "h2h", outcome: "Liverpool", price: 1.5 }],
       }),
     ]);
     expect(stats.teamAnalyst).toEqual({ won: 1, lost: 1, total: 2 });

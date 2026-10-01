@@ -9,10 +9,10 @@ export interface AiAnalysisInsertRow {
   surprise_pick_text: string;
   summary_text: string;
   model_used: string;
-  team_analyst_pick: ResolvedPersonaPick | null;
-  commentator_pick: ResolvedPersonaPick | null;
-  betting_analyst_pick: ResolvedPersonaPick | null;
-  surprise_combo_pick: ResolvedPersonaPick | null;
+  team_analyst_pick: ResolvedPersonaPick[];
+  commentator_pick: ResolvedPersonaPick[];
+  betting_analyst_pick: ResolvedPersonaPick[];
+  surprise_combo_pick: ResolvedPersonaPick[];
 }
 
 export async function insertAiAnalysis(supabase: SupabaseClient, row: AiAnalysisInsertRow): Promise<void> {
@@ -48,10 +48,10 @@ export interface LatestAnalysis {
   summaryText: string;
   modelUsed: string;
   generatedAt: string;
-  teamAnalystPick: ResolvedPersonaPick | null;
-  commentatorPick: ResolvedPersonaPick | null;
-  bettingAnalystPick: ResolvedPersonaPick | null;
-  surpriseComboPick: ResolvedPersonaPick | null;
+  teamAnalystPick: ResolvedPersonaPick[];
+  commentatorPick: ResolvedPersonaPick[];
+  bettingAnalystPick: ResolvedPersonaPick[];
+  surpriseComboPick: ResolvedPersonaPick[];
 }
 
 export async function getLatestAnalysis(supabase: SupabaseClient, matchId: string): Promise<LatestAnalysis | null> {
@@ -74,10 +74,10 @@ export async function getLatestAnalysis(supabase: SupabaseClient, matchId: strin
     summary_text: string;
     model_used: string;
     generated_at: string;
-    team_analyst_pick: ResolvedPersonaPick | null;
-    commentator_pick: ResolvedPersonaPick | null;
-    betting_analyst_pick: ResolvedPersonaPick | null;
-    surprise_combo_pick: ResolvedPersonaPick | null;
+    team_analyst_pick: ResolvedPersonaPick[];
+    commentator_pick: ResolvedPersonaPick[];
+    betting_analyst_pick: ResolvedPersonaPick[];
+    surprise_combo_pick: ResolvedPersonaPick[];
   }
 
   const rows = (data ?? []) as RawRow[];
@@ -92,10 +92,10 @@ export async function getLatestAnalysis(supabase: SupabaseClient, matchId: strin
     summaryText: row.summary_text,
     modelUsed: row.model_used,
     generatedAt: row.generated_at,
-    teamAnalystPick: row.team_analyst_pick ?? null,
-    commentatorPick: row.commentator_pick ?? null,
-    bettingAnalystPick: row.betting_analyst_pick ?? null,
-    surpriseComboPick: row.surprise_combo_pick ?? null,
+    teamAnalystPick: row.team_analyst_pick ?? [],
+    commentatorPick: row.commentator_pick ?? [],
+    bettingAnalystPick: row.betting_analyst_pick ?? [],
+    surpriseComboPick: row.surprise_combo_pick ?? [],
   };
 }
 
@@ -129,10 +129,10 @@ export async function getLatestAnalysesByMatchIds(
     summary_text: string;
     model_used: string;
     generated_at: string;
-    team_analyst_pick: ResolvedPersonaPick | null;
-    commentator_pick: ResolvedPersonaPick | null;
-    betting_analyst_pick: ResolvedPersonaPick | null;
-    surprise_combo_pick: ResolvedPersonaPick | null;
+    team_analyst_pick: ResolvedPersonaPick[];
+    commentator_pick: ResolvedPersonaPick[];
+    betting_analyst_pick: ResolvedPersonaPick[];
+    surprise_combo_pick: ResolvedPersonaPick[];
   }
 
   const map = new Map<string, LatestAnalysis>();
@@ -146,10 +146,10 @@ export async function getLatestAnalysesByMatchIds(
       summaryText: row.summary_text,
       modelUsed: row.model_used,
       generatedAt: row.generated_at,
-      teamAnalystPick: row.team_analyst_pick ?? null,
-      commentatorPick: row.commentator_pick ?? null,
-      bettingAnalystPick: row.betting_analyst_pick ?? null,
-      surpriseComboPick: row.surprise_combo_pick ?? null,
+      teamAnalystPick: row.team_analyst_pick ?? [],
+      commentatorPick: row.commentator_pick ?? [],
+      bettingAnalystPick: row.betting_analyst_pick ?? [],
+      surpriseComboPick: row.surprise_combo_pick ?? [],
     });
   }
   return map;
